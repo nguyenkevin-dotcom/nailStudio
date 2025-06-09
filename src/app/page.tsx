@@ -129,7 +129,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
           <section className="lg:col-span-1 lg:sticky lg:top-24">
             <SchedulingForm
               availableServices={availableServices}
@@ -137,7 +137,7 @@ export default function HomePage() {
               onAddAppointment={addAppointment}
             />
           </section>
-          <section className="lg:col-span-2">
+          <section className="lg:col-span-3">
             <AppointmentCalendar
               appointments={appointments}
               availableServices={availableServices}
