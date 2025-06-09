@@ -18,7 +18,7 @@ body {
     --popover-foreground: 0 0% 100%;
 
     --primary: 343 94% 71%; /* #fb6f92 */
-    --primary-foreground: 343 30% 10%; /* Dark pink/black for contrast on primary */
+    --primary-foreground: 0 0% 100%; /* White for contrast on primary */
 
     --secondary: 343 94% 78%; 
     --secondary-foreground: 343 30% 10%; /* Dark pink/black for contrast on secondary */
@@ -66,7 +66,7 @@ body {
     --popover-foreground: 343 100% 85.1%;
 
     --primary: 343 94% 71%;
-    --primary-foreground: 343 30% 10%;
+    --primary-foreground: 0 0% 100%; /* White for contrast on primary */
 
     --secondary: 343 80% 60%;
     --secondary-foreground: 343 30% 10%;
@@ -128,4 +128,3 @@ body {
   background-color: hsl(var(--primary));
   border-radius: 50%;
 }
-
