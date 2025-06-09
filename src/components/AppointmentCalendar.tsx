@@ -67,7 +67,7 @@ export default function AppointmentCalendar({
   
   const getCustomersInSlot = (day: Date, timeSlot: string): number => {
     return appointments
-      .filter(app => isSameDay(new Date(a.date), day) && app.time === timeSlot)
+      .filter(app => isSameDay(new Date(app.date), day) && app.time === timeSlot)
       .reduce((sum, app) => sum + app.groupSize, 0);
   };
 
@@ -104,7 +104,7 @@ export default function AppointmentCalendar({
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle className="text-xl font-headline">
-              Weekly Schedule: {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
+              {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
             </CardTitle>
           </CardHeader>
           <CardContent>
