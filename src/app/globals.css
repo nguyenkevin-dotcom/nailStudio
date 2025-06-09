@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,13 +9,13 @@ body {
 
 @layer base {
   :root {
-    --background: 343 30% 15%; /* Dark Pink/Maroon */
+    --background: 343 30% 25%; /* Dark Pink/Maroon - Made brighter */
     --foreground: 0 0% 100%; /* White */
 
-    --card: 343 30% 20%; 
+    --card: 343 30% 30%;  /* Made brighter */
     --card-foreground: 0 0% 100%;
 
-    --popover: 343 30% 20%;
+    --popover: 343 30% 30%; /* Made brighter */
     --popover-foreground: 0 0% 100%;
 
     --primary: 343 94% 71%; /* #fb6f92 */
@@ -23,7 +24,7 @@ body {
     --secondary: 343 94% 78%; 
     --secondary-foreground: 343 30% 10%; /* Dark pink/black for contrast on secondary */
 
-    --muted: 343 30% 25%;
+    --muted: 343 30% 35%; /* Adjusted slightly for new background */
     --muted-foreground: 343 100% 75%; /* Light pink/grey for muted text */
 
     --accent: 343 70% 50%; /* Mid pink for accent backgrounds */
@@ -32,8 +33,8 @@ body {
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%; /* Off-white */
 
-    --border: 343 30% 30%;
-    --input: 343 30% 35%;
+    --border: 343 30% 40%; /* Adjusted slightly for new background */
+    --input: 343 30% 45%; /* Adjusted slightly for new background */
     --ring: 343 94% 65%; /* Pink ring, kept original */
 
     --chart-1: 343 80% 60%;
@@ -56,13 +57,13 @@ body {
   .dark {
     /* This is the existing .dark theme, which is now similar to the new default.
        Could be adjusted to be a light theme or an alternative dark theme if a toggle is used. */
-    --background: 343 30% 15%;
+    --background: 343 30% 25%; /* Made brighter */
     --foreground: 343 100% 85.1%;
 
-    --card: 343 30% 20%;
+    --card: 343 30% 30%; /* Made brighter */
     --card-foreground: 343 100% 85.1%;
 
-    --popover: 343 30% 20%;
+    --popover: 343 30% 30%; /* Made brighter */
     --popover-foreground: 343 100% 85.1%;
 
     --primary: 343 94% 71%;
@@ -71,7 +72,7 @@ body {
     --secondary: 343 80% 60%;
     --secondary-foreground: 343 30% 10%;
 
-    --muted: 343 30% 25%;
+    --muted: 343 30% 35%; /* Adjusted slightly for new background */
     --muted-foreground: 343 100% 75%;
 
     --accent: 343 70% 50%;
@@ -80,8 +81,8 @@ body {
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 343 30% 30%;
-    --input: 343 30% 35%;
+    --border: 343 30% 40%; /* Adjusted slightly for new background */
+    --input: 343 30% 45%; /* Adjusted slightly for new background */
     --ring: 343 94% 65%;
 
     --chart-1: 343 80% 60%;
@@ -128,3 +129,4 @@ body {
   background-color: hsl(var(--primary));
   border-radius: 50%;
 }
+
