@@ -73,22 +73,22 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
 
   return (
     <Card className="shadow-xl w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center text-2xl font-headline">
-          <CalendarPlus className="mr-2 h-6 w-6 text-primary" />
+      <CardHeader className="p-4">
+        <CardTitle className="flex items-center text-xl font-headline">
+          <CalendarPlus className="mr-2 h-5 w-5 text-primary" />
           Book Your Appointment
         </CardTitle>
-        <CardDescription className="font-body">Fill in the details below to schedule your glam session.</CardDescription>
+        <CardDescription className="font-body text-sm">Fill in the details below to schedule your glam session.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold font-body flex items-center"><UserCircle className="mr-2 h-4 w-4" />Name for Appointment</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><UserCircle className="mr-2 h-4 w-4" />Name for Appointment</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter name for the booking" {...field} className="font-body" />
                   </FormControl>
@@ -102,7 +102,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               name="date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="font-semibold font-body flex items-center"><CalendarIcon className="mr-2 h-4 w-4" />Date</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><CalendarIcon className="mr-2 h-4 w-4" />Date</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -142,7 +142,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               name="time"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold font-body flex items-center"><Clock className="mr-2 h-4 w-4" />Time</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><Clock className="mr-2 h-4 w-4" />Time</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="font-body">
@@ -165,11 +165,11 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               name="services"
               render={() => (
                 <FormItem>
-                  <div className="mb-4">
-                    <FormLabel className="text-base font-semibold font-body flex items-center">
+                  <div className="mb-2">
+                    <FormLabel className="text-base font-semibold font-body flex items-center text-sm">
                       <Sparkles className="mr-2 h-4 w-4" />Services
                     </FormLabel>
-                    <FormDescription className="font-body">
+                    <FormDescription className="font-body text-xs">
                       Select all services you'd like to book.
                     </FormDescription>
                   </div>
@@ -184,7 +184,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                         return (
                           <FormItem
                             key={service.id}
-                            className="flex flex-row items-center space-x-3 space-y-0 mb-2 p-3 border rounded-md hover:bg-accent/50 transition-colors"
+                            className="flex flex-row items-center space-x-3 space-y-0 mb-1 p-2 border rounded-md hover:bg-accent/50 transition-colors"
                           >
                             <FormControl>
                               <Checkbox
@@ -200,7 +200,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                                 }}
                               />
                             </FormControl>
-                            <FormLabel className="font-normal font-body flex items-center cursor-pointer w-full">
+                            <FormLabel className="font-normal font-body text-sm flex items-center cursor-pointer w-full">
                               <IconComponent className="mr-2 h-5 w-5 text-primary" />
                               {service.name}
                             </FormLabel>
@@ -219,7 +219,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               name="groupSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold font-body flex items-center"><Users className="mr-2 h-4 w-4" />Group Size (max 3 per booking)</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><Users className="mr-2 h-4 w-4" />Group Size (max 3 per booking)</FormLabel>
                   <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)} value={String(field.value)}>
                     <FormControl>
                       <SelectTrigger className="font-body">
@@ -232,12 +232,12 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription className="font-body">Total customers for any time slot cannot exceed 6.</FormDescription>
+                  <FormDescription className="font-body text-xs">Total customers for any time slot cannot exceed 6.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full font-body text-lg py-6">Book Appointment</Button>
+            <Button type="submit" className="w-full font-body text-base py-3">Book Appointment</Button>
           </form>
         </Form>
       </CardContent>
