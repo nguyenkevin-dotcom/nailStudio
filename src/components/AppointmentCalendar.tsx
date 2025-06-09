@@ -4,9 +4,10 @@ import React from 'react';
 import { Calendar, type CalendarProps } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import type { Appointment, Service } from '@/types';
 import { format } from 'date-fns';
-import { CalendarDays, Clock, Users, Sparkles, Hand, Footprints, Eye } from 'lucide-react';
+import { CalendarDays, Clock, Users, Sparkles, UserCircle, Trash2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 interface AppointmentCalendarProps {
@@ -15,6 +16,7 @@ interface AppointmentCalendarProps {
   onDayClick: (date: Date) => void;
   selectedDateAppointments: Appointment[];
   selectedDate: Date | undefined;
+  onDeleteAppointment: (appointmentId: string) => void;
 }
 
 const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
@@ -24,16 +26,15 @@ const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementT
   return LucideIcons[iconName] as React.ElementType;
 };
 
-export default function AppointmentCalendar({ appointments, availableServices, onDayClick, selectedDateAppointments, selectedDate }: AppointmentCalendarProps) {
+export default function AppointmentCalendar({ appointments, availableServices, onDayClick, selectedDateAppointments, selectedDate, onDeleteAppointment }: AppointmentCalendarProps) {
   
-  const DayContentWithDot: CalendarProps['components']['DayContent'] = ({ date, displayMonth }) => {
+  const DayContentWithDot: CalendarProps['components']['DayContent'] = ({ date }) => {
     const isBooked = appointments.some(app => 
       app.date.getFullYear() === date.getFullYear() &&
       app.date.getMonth() === date.getMonth() &&
       app.date.getDate() === date.getDate()
     );
 
-    // Default rendering from react-day-picker for the date number
     const dateNumber = <>{date.getDate()}</>;
     
     return (
@@ -88,12 +89,28 @@ export default function AppointmentCalendar({ appointments, availableServices, o
                     return (
                       <li key={app.id} className="p-4 border rounded-lg shadow-sm bg-background hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-2">
-                           <p className="font-semibold text-lg text-primary font-body flex items-center">
-                            <Clock className="mr-2 h-5 w-5" /> {app.time}
-                          </p>
-                           <p className="text-sm text-muted-foreground font-body flex items-center">
-                            <Users className="mr-1 h-4 w-4" /> {app.groupSize} person{app.groupSize > 1 ? 's' : ''}
-                          </p>
+                           <div className="flex flex-col">
+                             <p className="font-semibold text-lg text-primary font-body flex items-center">
+                              <Clock className="mr-2 h-5 w-5" /> {app.time}
+                            </p>
+                            <p className="text-sm text-muted-foreground font-body flex items-center mt-1">
+                              <UserCircle className="mr-1 h-4 w-4" /> For: {app.name}
+                            </p>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                              <p className="text-sm text-muted-foreground font-body flex items-center">
+                                <Users className="mr-1 h-4 w-4" /> {app.groupSize} person{app.groupSize > 1 ? 's' : ''}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive/80 h-8 w-8"
+                                onClick={() => onDeleteAppointment(app.id)}
+                                aria-label="Delete appointment"
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                           </div>
                         </div>
                         <div>
                           <p className="font-medium mb-1 font-body">Services:</p>

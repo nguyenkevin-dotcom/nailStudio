@@ -8,6 +8,7 @@ export interface Service {
 
 export interface Appointment {
   id: string;
+  name: string; // Added name field
   date: Date;
   time: string;
   services: string[]; // Array of service IDs

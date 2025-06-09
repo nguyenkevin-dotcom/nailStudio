@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Clock, Users, Hand, Footprints, Eye, Sparkles, CalendarPlus } from 'lucide-react';
+import { CalendarIcon, Clock, Users, Hand, Footprints, Eye, Sparkles, CalendarPlus, UserCircle } from 'lucide-react';
 import type { Service, Appointment } from '@/types';
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +25,7 @@ interface SchedulingFormProps {
 }
 
 const formSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters.').max(50, 'Name cannot exceed 50 characters.'),
   date: z.date({ required_error: 'Please select a date.' }),
   time: z.string({ required_error: 'Please select a time.' }).min(1, 'Please select a time.'),
   services: z.array(z.string()).min(1, { message: 'Please select at least one service.' }),
@@ -35,6 +37,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       date: undefined,
       time: '',
       services: [],
@@ -48,12 +51,12 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
       title: "Appointment Scheduled!",
       description: (
         <div className="font-body">
-          Your appointment for <span className="font-semibold">{format(values.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{values.time}</span> is booked.
+          Appointment for <span className="font-semibold">{values.name}</span> on <span className="font-semibold">{format(values.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{values.time}</span> is booked.
         </div>
       ),
       variant: "default", 
     });
-    form.reset({ date: undefined, time: '', services: [], groupSize: 1 });
+    form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1 });
   }
 
   const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
@@ -76,6 +79,20 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-semibold font-body flex items-center"><UserCircle className="mr-2 h-4 w-4" />Name for Appointment</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter name for the booking" {...field} className="font-body" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="date"

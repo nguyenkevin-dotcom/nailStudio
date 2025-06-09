@@ -7,6 +7,8 @@ import SchedulingForm from '@/components/SchedulingForm';
 import AppointmentCalendar from '@/components/AppointmentCalendar';
 import { Button } from '@/components/ui/button';
 import { ArrowUpCircle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
 
 const availableServices: Service[] = [
   { id: 'hands', name: 'Nails (Hands)', iconName: 'Hand' },
@@ -24,27 +26,29 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedDateAppointments, setSelectedDateAppointments] = useState<Appointment[]>([]);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Load appointments from local storage if available
     const storedAppointments = localStorage.getItem('glamBookAppointments');
     if (storedAppointments) {
       try {
         const parsedAppointments = JSON.parse(storedAppointments).map((app: any) => ({
           ...app,
-          date: new Date(app.date), // Ensure date is a Date object
+          date: new Date(app.date), 
         }));
         setAppointments(parsedAppointments);
       } catch (error) {
         console.error("Error parsing appointments from local storage:", error);
-        localStorage.removeItem('glamBookAppointments'); // Clear corrupted data
+        localStorage.removeItem('glamBookAppointments'); 
       }
     }
   }, []);
 
   useEffect(() => {
-    // Save appointments to local storage whenever they change
     localStorage.setItem('glamBookAppointments', JSON.stringify(appointments));
+     if (selectedDate) { // Re-filter appointments for the selected date if appointments change
+      handleDayClick(selectedDate, appointments);
+    }
   }, [appointments]);
   
 
@@ -72,9 +76,25 @@ export default function HomePage() {
     });
   };
 
-  const handleDayClick = (day: Date) => {
+  const deleteAppointment = (appointmentId: string) => {
+    const appointmentToDelete = appointments.find(app => app.id === appointmentId);
+    setAppointments(prev => prev.filter(app => app.id !== appointmentId));
+    if (appointmentToDelete) {
+       toast({
+        title: "Appointment Canceled",
+        description: (
+          <div className="font-body">
+            Appointment for <span className="font-semibold">{appointmentToDelete.name}</span> on <span className="font-semibold">{format(appointmentToDelete.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{appointmentToDelete.time}</span> has been canceled.
+          </div>
+        ),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDayClick = (day: Date, currentAppointments: Appointment[] = appointments) => {
     setSelectedDate(day);
-    const appsOnDay = appointments.filter(app => 
+    const appsOnDay = currentAppointments.filter(app => 
       app.date.getFullYear() === day.getFullYear() &&
       app.date.getMonth() === day.getMonth() &&
       app.date.getDate() === day.getDate()
@@ -91,7 +111,7 @@ export default function HomePage() {
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-          <section className="lg:col-span-1 lg:sticky lg:top-24"> {/* Sticky form on larger screens */}
+          <section className="lg:col-span-1 lg:sticky lg:top-24">
             <SchedulingForm
               availableServices={availableServices}
               timeSlots={timeSlots}
@@ -102,9 +122,10 @@ export default function HomePage() {
             <AppointmentCalendar
               appointments={appointments}
               availableServices={availableServices}
-              onDayClick={handleDayClick}
+              onDayClick={(day) => handleDayClick(day)}
               selectedDateAppointments={selectedDateAppointments}
               selectedDate={selectedDate}
+              onDeleteAppointment={deleteAppointment}
             />
           </section>
         </div>
