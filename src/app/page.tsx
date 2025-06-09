@@ -42,7 +42,6 @@ export default function HomePage() {
         localStorage.removeItem('glamBookAppointments'); 
       }
     }
-    // Set selectedDate to today on initial load to show current week's appointments
     if (!selectedDate && appointments.length === 0) {
         setSelectedDate(new Date());
     }
@@ -145,6 +144,7 @@ export default function HomePage() {
               onCalendarDayClick={handleCalendarDayClick}
               selectedDate={selectedDate}
               onDeleteAppointment={deleteAppointment}
+              timeSlots={timeSlots} // Pass timeSlots here
             />
           </section>
         </div>
