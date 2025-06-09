@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'GlamBook - Elegant Appointment Scheduling',
-  description: 'Schedule your beauty appointments with GlamBook. Select services, date, time, and group size with ease.',
+  title: 'Nehtové studio Lenka Šumperk',
+  description: 'Schedule your beauty appointments. Select services, date, time, and group size with ease.',
 };
 
 export default function RootLayout({

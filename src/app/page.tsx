@@ -150,7 +150,7 @@ export default function HomePage() {
         </div>
       </main>
       <footer className="text-center p-6 text-sm text-muted-foreground border-t border-border font-body">
-        GlamBook &copy; {new Date().getFullYear()} - Your Beauty, Scheduled.
+        Nehtové studio Lenka Šumperk &copy; {new Date().getFullYear()} - Your Beauty, Scheduled.
       </footer>
       {showScrollTop && (
          <Button

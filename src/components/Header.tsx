@@ -6,7 +6,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-center sm:justify-start">
         <Sparkles className="h-8 w-8 text-primary-foreground mr-3" />
         <h1 className="text-3xl font-headline font-bold text-primary-foreground">
-          GlamBook
+          Nehtové studio Lenka Šumperk
         </h1>
       </div>
     </header>
