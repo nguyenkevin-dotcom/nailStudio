@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import type { Appointment, Service } from '@/types';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parse } from 'date-fns';
-import { CalendarDays, Clock, Users, Sparkles, UserCircle, Trash2 } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays } from 'date-fns';
+import { CalendarDays, Clock, Users, Sparkles, UserCircle, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 interface AppointmentCalendarProps {
@@ -71,6 +71,18 @@ export default function AppointmentCalendar({
       .reduce((sum, app) => sum + app.groupSize, 0);
   };
 
+  const handlePrevWeek = () => {
+    if (selectedDate) {
+      onCalendarDayClick(subDays(selectedDate, 7));
+    }
+  };
+
+  const handleNextWeek = () => {
+    if (selectedDate) {
+      onCalendarDayClick(addDays(selectedDate, 7));
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -103,9 +115,17 @@ export default function AppointmentCalendar({
       {selectedDate && currentWeekDays.length > 0 && (
         <Card className="shadow-xl">
           <CardHeader>
-            <CardTitle className="text-xl font-headline">
-               {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" onClick={handlePrevWeek} aria-label="Previous week">
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <CardTitle className="text-xl font-headline text-center">
+                 {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
+              </CardTitle>
+              <Button variant="ghost" size="icon" onClick={handleNextWeek} aria-label="Next week">
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className="w-full">
@@ -192,3 +212,4 @@ export default function AppointmentCalendar({
     </div>
   );
 }
+
