@@ -104,7 +104,7 @@ export default function AppointmentCalendar({
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle className="text-xl font-headline">
-              {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
+               {format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - {format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -114,7 +114,7 @@ export default function AppointmentCalendar({
                   {/* Header Row */}
                   <div className="p-2 border-b border-r border-border font-semibold text-sm sticky top-0 bg-card z-10 font-body">Time</div>
                   {currentWeekDays.map(day => (
-                    <div key={format(day, 'yyyy-MM-dd-header')} 
+                    <div key={format(day, "yyyy-MM-dd'-header'")} 
                          className={`p-2 border-b border-r border-border font-semibold text-sm text-center sticky top-0 bg-card z-10 font-body ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
                       {format(day, 'EEE')} <br /> {format(day, 'd')}
                     </div>
