@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,8 +24,7 @@ const timeSlots = [
 
 export default function HomePage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedDateAppointments, setSelectedDateAppointments] = useState<Appointment[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date()); // Initialize with today's date
   const [showScrollTop, setShowScrollTop] = useState(false);
   const { toast } = useToast();
 
@@ -42,13 +42,14 @@ export default function HomePage() {
         localStorage.removeItem('glamBookAppointments'); 
       }
     }
+    // Set selectedDate to today on initial load to show current week's appointments
+    if (!selectedDate && appointments.length === 0) {
+        setSelectedDate(new Date());
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('glamBookAppointments', JSON.stringify(appointments));
-     if (selectedDate) { // Re-filter appointments for the selected date if appointments change
-      handleDayClick(selectedDate, appointments);
-    }
   }, [appointments]);
   
 
@@ -67,6 +68,30 @@ export default function HomePage() {
 
 
   const addAppointment = (newAppointmentData: Omit<Appointment, 'id'>) => {
+    const appointmentsOnSameDateTime = appointments.filter(
+      app => 
+        app.date.getFullYear() === newAppointmentData.date.getFullYear() &&
+        app.date.getMonth() === newAppointmentData.date.getMonth() &&
+        app.date.getDate() === newAppointmentData.date.getDate() &&
+        app.time === newAppointmentData.time
+    );
+
+    const existingCustomersAtSlot = appointmentsOnSameDateTime.reduce((sum, app) => sum + app.groupSize, 0);
+
+    if (existingCustomersAtSlot + newAppointmentData.groupSize > 6) {
+      toast({
+        title: "Booking Limit Reached",
+        description: (
+          <div className="font-body">
+            Sorry, this time slot cannot accommodate an additional group of {newAppointmentData.groupSize}.
+            Maximum 6 customers allowed. Currently booked: {existingCustomersAtSlot}.
+          </div>
+        ),
+        variant: "destructive",
+      });
+      return false; // Indicate failure
+    }
+
     const newId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
     const appointmentWithId = { ...newAppointmentData, id: newId };
     setAppointments(prev => {
@@ -74,6 +99,7 @@ export default function HomePage() {
       updatedAppointments.sort((a, b) => a.date.getTime() - b.date.getTime() || a.time.localeCompare(b.time));
       return updatedAppointments;
     });
+    return true; // Indicate success
   };
 
   const deleteAppointment = (appointmentId: string) => {
@@ -92,14 +118,8 @@ export default function HomePage() {
     }
   };
 
-  const handleDayClick = (day: Date, currentAppointments: Appointment[] = appointments) => {
+  const handleCalendarDayClick = (day: Date) => {
     setSelectedDate(day);
-    const appsOnDay = currentAppointments.filter(app => 
-      app.date.getFullYear() === day.getFullYear() &&
-      app.date.getMonth() === day.getMonth() &&
-      app.date.getDate() === day.getDate()
-    ).sort((a,b) => a.time.localeCompare(b.time));
-    setSelectedDateAppointments(appsOnDay);
   };
 
   const scrollToTop = () => {
@@ -122,8 +142,7 @@ export default function HomePage() {
             <AppointmentCalendar
               appointments={appointments}
               availableServices={availableServices}
-              onDayClick={(day) => handleDayClick(day)}
-              selectedDateAppointments={selectedDateAppointments}
+              onCalendarDayClick={handleCalendarDayClick}
               selectedDate={selectedDate}
               onDeleteAppointment={deleteAppointment}
             />

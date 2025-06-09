@@ -1,7 +1,8 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Clock, Users, Hand, Footprints, Eye, Sparkles, CalendarPlus, UserCircle } from 'lucide-react';
+import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle } from 'lucide-react';
 import type { Service, Appointment } from '@/types';
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +22,7 @@ import * as LucideIcons from 'lucide-react';
 interface SchedulingFormProps {
   availableServices: Service[];
   timeSlots: string[];
-  onAddAppointment: (data: Omit<Appointment, 'id'>) => void;
+  onAddAppointment: (data: Omit<Appointment, 'id'>) => boolean; // Returns true on success, false on failure (e.g. limit reached)
 }
 
 const formSchema = z.object({
@@ -29,7 +30,7 @@ const formSchema = z.object({
   date: z.date({ required_error: 'Please select a date.' }),
   time: z.string({ required_error: 'Please select a time.' }).min(1, 'Please select a time.'),
   services: z.array(z.string()).min(1, { message: 'Please select at least one service.' }),
-  groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3."),
+  groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3. Combined group size for a time slot cannot exceed 6."),
 });
 
 export default function SchedulingForm({ availableServices, timeSlots, onAddAppointment }: SchedulingFormProps) {
@@ -46,17 +47,20 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onAddAppointment(values);
-    toast({
-      title: "Appointment Scheduled!",
-      description: (
-        <div className="font-body">
-          Appointment for <span className="font-semibold">{values.name}</span> on <span className="font-semibold">{format(values.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{values.time}</span> is booked.
-        </div>
-      ),
-      variant: "default", 
-    });
-    form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1 });
+    const success = onAddAppointment(values);
+    if (success) {
+      toast({
+        title: "Appointment Scheduled!",
+        description: (
+          <div className="font-body">
+            Appointment for <span className="font-semibold">{values.name}</span> on <span className="font-semibold">{format(values.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{values.time}</span> is booked.
+          </div>
+        ),
+        variant: "default", 
+      });
+      form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1 });
+    }
+    // If not successful, the toast is handled by onAddAppointment in page.tsx
   }
 
   const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
@@ -215,7 +219,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               name="groupSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold font-body flex items-center"><Users className="mr-2 h-4 w-4" />Group Size</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center"><Users className="mr-2 h-4 w-4" />Group Size (max 3 per booking)</FormLabel>
                   <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)} value={String(field.value)}>
                     <FormControl>
                       <SelectTrigger className="font-body">
@@ -228,6 +232,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormDescription className="font-body">Total customers for any time slot cannot exceed 6.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
