@@ -182,7 +182,8 @@ export default function AppointmentCalendar({
             className="rounded-md border p-4"
             modifiersClassNames={{
               selected: cn(
-                'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90',
+                'bg-primary text-primary-foreground hover:bg-primary/90',
+                'focus:bg-primary focus:text-primary-foreground', // Ensure focus state matches selected state
                 'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none'
               ),
               today: 'bg-accent text-accent-foreground',
@@ -296,7 +297,7 @@ export default function AppointmentCalendar({
                               return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                             });
                             
-                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; // -0.5rem for margin
+                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; 
                             const { horizontalOverlapCount, horizontalOverlapIndex } = app;
 
                             const dynamicStyles: React.CSSProperties = {
@@ -335,7 +336,7 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.2rem)` }}> {/* Adjusted maxHeight slightly */}
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.0rem)` }}> {/* Adjusted maxHeight */}
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
