@@ -23,9 +23,10 @@ export default function Header() {
         </h1>
         <div className="text-sm text-primary-foreground text-center sm:text-right">
           <p>Opening Hours: Mon - Fri, 8:00 - 19:00</p>
-          {currentTime && <p>Current Time: {currentTime}</p>}
+          {currentTime && <p>Current Time: <span className="font-semibold">{currentTime}</span></p>}
         </div>
       </div>
     </header>
   );
 }
+

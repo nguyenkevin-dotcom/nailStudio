@@ -158,7 +158,7 @@ export default function AppointmentCalendar({
     return processed;
   }, [appointments, timeSlots, calendarView, currentViewDays]);
 
-  const cardFixedWidthRem = 8; // Fixed width for appointment cards, e.g., 8rem = 128px
+  const cardFixedWidthRem = 8; 
 
   return (
     <div className="space-y-6">
@@ -292,7 +292,7 @@ export default function AppointmentCalendar({
                               return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                             });
                             
-                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5;
+                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; // -0.5rem for margin
                             const { horizontalOverlapCount, horizontalOverlapIndex } = app;
 
                             const dynamicStyles: React.CSSProperties = {
@@ -301,8 +301,8 @@ export default function AppointmentCalendar({
                                 gridRowEnd: `span ${duration}`,
                                 zIndex: 5 + (horizontalOverlapIndex || 0),
                                 overflow: 'hidden',
-                                position: 'relative',
-                                width: `${cardFixedWidthRem}rem`,
+                                position: 'relative', // Crucial for `left` to work
+                                width: `${cardFixedWidthRem}rem`, 
                             };
 
                             if (horizontalOverlapCount > 1) {
@@ -318,7 +318,7 @@ export default function AppointmentCalendar({
                                     style={dynamicStyles}
                                 >
                                     <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
-                                        <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
+                                        <p className="font-semibold text-[hsl(var(--slot-full-foreground))] truncate font-body flex-grow mr-1">{app.name}</p>
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -330,7 +330,7 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.5rem)` }}>
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3rem)` }}>
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
@@ -355,3 +355,4 @@ export default function AppointmentCalendar({
     </div>
   );
 }
+
