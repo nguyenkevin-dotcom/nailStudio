@@ -9,96 +9,96 @@ body {
 
 @layer base {
   :root {
-    --background: 343 30% 25%; /* Dark Pink/Maroon - Made brighter */
-    --foreground: 0 0% 100%; /* White */
+    --background: 23 33% 85%; /* User: #e8d6cb */
+    --foreground: 20 10% 25%; /* Dark text for contrast on light background */
 
-    --card: 343 30% 30%;  /* Made brighter */
-    --card-foreground: 0 0% 100%;
+    --card: 23 33% 82%; /* Slightly darker than background */
+    --card-foreground: 20 10% 25%;
 
-    --popover: 343 30% 30%; /* Made brighter */
-    --popover-foreground: 0 0% 100%;
+    --popover: 23 33% 82%;
+    --popover-foreground: 20 10% 25%;
 
-    --primary: 343 94% 71%; /* #fb6f92 */
-    --primary-foreground: 0 0% 100%; /* White for contrast on primary */
+    --primary: 10 26% 74%; /* User: #d0ada7 */
+    --primary-foreground: 20 10% 20%; /* Dark text for contrast on light primary */
 
-    --secondary: 343 94% 78%; 
-    --secondary-foreground: 343 30% 10%; /* Dark pink/black for contrast on secondary */
+    --secondary: 10 30% 68%; /* Derived from primary */
+    --secondary-foreground: 20 10% 20%; /* Dark text */
 
-    --muted: 343 30% 35%; /* Adjusted slightly for new background */
-    --muted-foreground: 343 100% 75%; /* Light pink/grey for muted text */
+    --muted: 23 30% 90%; /* Lighter than background */
+    --muted-foreground: 20 10% 45%; /* Darker grey for muted text */
 
-    --accent: 343 70% 50%; /* Mid pink for accent backgrounds */
-    --accent-foreground: 0 0% 100%; /* White text on accent */
+    --accent: 10 40% 65%; /* Vibrant version of primary */
+    --accent-foreground: 20 10% 20%; /* Dark text on accent */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%; /* Off-white */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 343 30% 40%; /* Adjusted slightly for new background */
-    --input: 343 30% 45%; /* Adjusted slightly for new background */
-    --ring: 343 94% 65%; /* Pink ring, kept original */
+    --border: 23 30% 75%;
+    --input: 23 30% 78%;
+    --ring: 10 40% 65%; /* Same as accent for focus */
 
-    --chart-1: 343 80% 60%;
-    --chart-2: 343 70% 50%;
-    --chart-3: 343 60% 40%;
-    --chart-4: 343 90% 70%;
-    --chart-5: 343 50% 30%;
+    --chart-1: 10 30% 70%;
+    --chart-2: 10 35% 65%;
+    --chart-3: 10 40% 60%;
+    --chart-4: 10 20% 80%;
+    --chart-5: 10 25% 55%;
     --radius: 0.5rem;
 
-    /* Sidebar colors remain as originally defined for a light sidebar on dark app background, can be adjusted if needed */
-    --sidebar-background: 343 100% 98%;
-    --sidebar-foreground: 343 50% 26.1%;
-    --sidebar-primary: 343 94% 71%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 343 100% 95.9%;
-    --sidebar-accent-foreground: 343 94% 65%;
-    --sidebar-border: 343 94% 91%;
-    --sidebar-ring: 343 94% 65%;
+    /* Sidebar for light theme */
+    --sidebar-background: 10 20% 90%; /* Very light shade of primary's hue */
+    --sidebar-foreground: 10 15% 30%; /* Dark text */
+    --sidebar-primary: 10 26% 74%; /* Main primary */
+    --sidebar-primary-foreground: 20 10% 20%;
+    --sidebar-accent: 10 26% 85%; /* Lighter shade of primary for sidebar accent */
+    --sidebar-accent-foreground: 10 15% 30%;
+    --sidebar-border: 10 20% 80%;
+    --sidebar-ring: 10 26% 74%;
   }
+
   .dark {
-    /* This is the existing .dark theme, which is now similar to the new default.
-       Could be adjusted to be a light theme or an alternative dark theme if a toggle is used. */
-    --background: 343 30% 25%; /* Made brighter */
-    --foreground: 343 100% 85.1%;
+    --background: 20 10% 15%; /* Dark grey/brown */
+    --foreground: 23 30% 80%; /* Light text */
 
-    --card: 343 30% 30%; /* Made brighter */
-    --card-foreground: 343 100% 85.1%;
+    --card: 20 10% 20%;
+    --card-foreground: 23 30% 80%;
 
-    --popover: 343 30% 30%; /* Made brighter */
-    --popover-foreground: 343 100% 85.1%;
+    --popover: 20 10% 20%;
+    --popover-foreground: 23 30% 80%;
 
-    --primary: 343 94% 71%;
-    --primary-foreground: 0 0% 100%; /* White for contrast on primary */
+    --primary: 10 26% 74%; /* User's primary, which is light */
+    --primary-foreground: 20 10% 20%; /* Dark text on light primary */
 
-    --secondary: 343 80% 60%;
-    --secondary-foreground: 343 30% 10%;
+    --secondary: 10 30% 60%; /* Slightly darker primary for dark theme context */
+    --secondary-foreground: 20 10% 15%; /* Dark text on the mid-light secondary */
 
-    --muted: 343 30% 35%; /* Adjusted slightly for new background */
-    --muted-foreground: 343 100% 75%;
+    --muted: 20 10% 25%;
+    --muted-foreground: 23 30% 70%;
 
-    --accent: 343 70% 50%;
-    --accent-foreground: 343 100% 94.7%;
+    --accent: 10 40% 65%; /* User's primary made more vibrant, remains light */
+    --accent-foreground: 20 10% 15%; /* Dark text on light accent */
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 343 30% 40%; /* Adjusted slightly for new background */
-    --input: 343 30% 45%; /* Adjusted slightly for new background */
-    --ring: 343 94% 65%;
+    --border: 20 10% 30%;
+    --input: 20 10% 35%;
+    --ring: 10 40% 65%; /* Same as accent for focus */
 
-    --chart-1: 343 80% 60%;
-    --chart-2: 343 70% 50%;
-    --chart-3: 343 60% 40%;
-    --chart-4: 343 90% 70%;
-    --chart-5: 343 50% 30%;
+    --chart-1: 10 30% 70%;
+    --chart-2: 10 35% 65%;
+    --chart-3: 10 40% 60%;
+    --chart-4: 10 20% 80%;
+    --chart-5: 10 25% 55%;
 
-    --sidebar-background: 343 30% 10%;
-    --sidebar-foreground: 343 100% 95.9%;
-    --sidebar-primary: 343 94% 71%;
-    --sidebar-primary-foreground: 343 30% 5%;
-    --sidebar-accent: 343 30% 15.9%;
-    --sidebar-accent-foreground: 343 100% 95.9%;
-    --sidebar-border: 343 30% 15.9%;
-    --sidebar-ring: 343 94% 65%;
+    /* Sidebar for dark theme */
+    --sidebar-background: 20 10% 10%; /* Even darker than main dark bg */
+    --sidebar-foreground: 23 30% 80%; /* Light text */
+    --sidebar-primary: 10 26% 74%; /* The user's primary color */
+    --sidebar-primary-foreground: 20 10% 20%; /* Dark text on light primary */
+    --sidebar-accent: 20 10% 25%; /* Slightly lighter than dark sidebar bg for accent */
+    --sidebar-accent-foreground: 23 30% 80%;
+    --sidebar-border: 20 10% 25%;
+    --sidebar-ring: 10 26% 74%;
   }
 }
 
@@ -129,4 +129,3 @@ body {
   background-color: hsl(var(--primary));
   border-radius: 50%;
 }
-
