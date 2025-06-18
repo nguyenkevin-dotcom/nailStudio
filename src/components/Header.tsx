@@ -1,5 +1,20 @@
 
+'use client';
+
+import { useState, useEffect } from 'react';
+
 export default function Header() {
+  const [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString());
+    }, 1000);
+    // Set initial time
+    setCurrentTime(new Date().toLocaleTimeString());
+    return () => clearInterval(timer); // Cleanup interval on component unmount
+  }, []);
+
   return (
     <header className="bg-primary shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between">
@@ -8,7 +23,7 @@ export default function Header() {
         </h1>
         <div className="text-sm text-primary-foreground text-center sm:text-right">
           <p>Opening Hours: Mon - Fri, 8:00 - 19:00</p>
-          <p>Location: Šumperk</p>
+          {currentTime && <p>Current Time: {currentTime}</p>}
         </div>
       </div>
     </header>
