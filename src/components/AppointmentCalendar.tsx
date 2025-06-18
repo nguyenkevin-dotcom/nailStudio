@@ -115,7 +115,6 @@ export default function AppointmentCalendar({
             ? `${format(currentViewDays[0], 'MMM do')} - ${format(currentViewDays[currentViewDays.length - 1], 'MMM do, yyyy')}`
             : format(currentViewDays[0], 'EEEE, MMM do, yyyy');
     }
-    // Fallback if selectedDate is also undefined initially, though HomePage tries to set it.
     const today = new Date();
     return calendarView === 'week'
         ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(today, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
@@ -124,9 +123,6 @@ export default function AppointmentCalendar({
 
   const processedAppointments = useMemo(() => {
     const startTimeCounts: { [key: string]: number } = {};
-    // Ensure appointments are sorted consistently for stable overlapIndex assignment
-    // The parent component already sorts them, but an additional sort here can be a safeguard if needed.
-    // For now, we assume the prop `appointments` is already sorted as desired.
     return appointments.map(app => {
       const appDate = new Date(app.date);
       const key = `${format(appDate, 'yyyy-MM-dd')}-${app.time}`;
@@ -160,7 +156,7 @@ export default function AppointmentCalendar({
               today: 'bg-accent text-accent-foreground',
             }}
             initialFocus={!!selectedDate}
-            weekStartsOn={1} // Monday
+            weekStartsOn={1} 
           />
         </CardContent>
       </Card>
@@ -235,68 +231,74 @@ export default function AppointmentCalendar({
                     ))}
 
 
-                    {processedAppointments.map(app => {
-                        const appDate = new Date(app.date);
-                        const dayIndex = currentViewDays.findIndex(d => isSameDay(appDate, d));
-                        if (dayIndex === -1) return null;
+                    {calendarView === 'day' &&
+                        processedAppointments.map(app => {
+                            const appDate = new Date(app.date);
 
-                        const startTimeIndex = timeSlots.indexOf(app.time);
-                        if (startTimeIndex === -1) return null;
+                            if (currentViewDays.length === 0 || !isSameDay(appDate, currentViewDays[0])) {
+                              return null;
+                            }
+                            
+                            const dayGridColumnIndex = 0; 
 
-                        const duration = app.services.length || 1;
+                            const startTimeIndex = timeSlots.indexOf(app.time);
+                            if (startTimeIndex === -1) return null;
 
-                        const serviceObjects = app.services.map(serviceId => {
-                          const serviceInfo = availableServices.find(s => s.id === serviceId);
-                          return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
-                        });
+                            const duration = app.services.length || 1;
 
-                        const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
-                        const overlapOffsetAmount = 4; // pixels
-                        const offset = app.overlapIndex * overlapOffsetAmount;
-                        const dynamicZIndex = 5 + app.overlapIndex;
+                            const serviceObjects = app.services.map(serviceId => {
+                              const serviceInfo = availableServices.find(s => s.id === serviceId);
+                              return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
+                            });
+                            
+                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; 
 
-                        return (
-                            <div
-                                key={app.id}
-                                className="bg-primary/20 p-1.5 rounded-md text-xs border border-primary/40 hover:bg-primary/30 m-0.5 shadow-sm flex flex-col"
-                                style={{
-                                    gridColumnStart: dayIndex + 2,
-                                    gridRowStart: startTimeIndex + 2,
-                                    gridRowEnd: `span ${duration}`,
-                                    zIndex: dynamicZIndex,
-                                    overflow: 'hidden',
-                                    position: 'relative', // Keeps it in the grid flow for placement, transform moves it from there
-                                    transform: `translate(${offset}px, ${offset}px)`,
-                                }}
-                            >
-                                <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
-                                    <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-destructive hover:text-destructive/80 h-5 w-5 shrink-0"
-                                        onClick={() => onDeleteAppointment(app.id)}
-                                        aria-label="Delete appointment"
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
+                            const overlapOffsetAmount = 4; 
+                            const offset = app.overlapIndex * overlapOffsetAmount;
+                            const dynamicZIndex = 5 + app.overlapIndex;
+
+                            return (
+                                <div
+                                    key={app.id}
+                                    className="bg-primary/20 p-1.5 rounded-md text-xs border border-primary/40 hover:bg-primary/30 m-0.5 shadow-sm flex flex-col"
+                                    style={{
+                                        gridColumnStart: dayGridColumnIndex + 2, 
+                                        gridRowStart: startTimeIndex + 2,
+                                        gridRowEnd: `span ${duration}`,
+                                        zIndex: dynamicZIndex,
+                                        overflow: 'hidden',
+                                        position: 'relative', 
+                                        transform: `translate(${offset}px, ${offset}px)`,
+                                    }}
+                                >
+                                    <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
+                                        <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive hover:text-destructive/80 h-5 w-5 shrink-0"
+                                            onClick={() => onDeleteAppointment(app.id)}
+                                            aria-label="Delete appointment"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                    <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3rem)` }}>
+                                        <ul className="mt-0.5 space-y-0.5">
+                                            {serviceObjects.map(service => {
+                                                const SvcIcon = getIcon(service.iconName);
+                                                return (
+                                                <li key={service.id} className="flex items-center text-muted-foreground font-body leading-tight">
+                                                    <SvcIcon className="inline h-3 w-3 mr-1 text-secondary shrink-0"/>
+                                                    <span className="truncate">{service.name}</span>
+                                                </li>
+                                            )})}
+                                        </ul>
+                                    </ScrollArea>
                                 </div>
-                                <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}>
-                                    <ul className="mt-0.5 space-y-0.5">
-                                        {serviceObjects.map(service => {
-                                            const SvcIcon = getIcon(service.iconName);
-                                            return (
-                                            <li key={service.id} className="flex items-center text-muted-foreground font-body leading-tight">
-                                                <SvcIcon className="inline h-3 w-3 mr-1 text-secondary shrink-0"/>
-                                                <span className="truncate">{service.name}</span>
-                                            </li>
-                                        )})}
-                                    </ul>
-                                </ScrollArea>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
                   </div>
                 </div>
               </ScrollArea>
