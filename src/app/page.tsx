@@ -35,15 +35,28 @@ export default function HomePage() {
     try {
       const response = await fetch('/api/appointments');
       if (!response.ok) {
-        throw new Error('Failed to fetch appointments');
+        let errorText = 'Failed to fetch appointments from the API.';
+        try {
+            const errorData = await response.json();
+            if (errorData && errorData.message) {
+                errorText = `API Error: ${errorData.message}${errorData.error ? ` (Details: ${errorData.error})` : ''}`;
+            } else if (response.statusText) {
+                errorText = `API Error: ${response.status} ${response.statusText}`;
+            }
+        } catch (e) {
+            // Failed to parse JSON, or no specific message, use status text if available
+            if(response.statusText) {
+                 errorText = `API Error: ${response.status} ${response.statusText}`;
+            }
+            console.error("Failed to parse error response from API:", e);
+        }
+        throw new Error(errorText);
       }
       const data: Appointment[] = await response.json();
-      // Ensure dates are Date objects
       const parsedAppointments = data.map(app => ({
         ...app,
         date: new Date(app.date),
       }));
-      // Sort appointments after fetching
       parsedAppointments.sort((a, b) => {
           const dateComparison = a.date.getTime() - b.date.getTime();
           if (dateComparison !== 0) return dateComparison;
@@ -53,11 +66,11 @@ export default function HomePage() {
     } catch (error) {
       console.error("Error fetching appointments:", error);
       toast({
-        title: "Error",
-        description: "Could not load appointments from the server.",
+        title: "Error Fetching Appointments",
+        description: (error as Error).message,
         variant: "destructive",
       });
-      setAppointments([]); // Clear appointments on error
+      setAppointments([]);
     } finally {
       setIsLoading(false);
     }
@@ -66,10 +79,10 @@ export default function HomePage() {
   useEffect(() => {
     fetchAppointments();
     if (!selectedDate) {
-        setSelectedDate(new Date()); 
+        setSelectedDate(new Date());
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAppointments]); // fetchAppointments is memoized with useCallback
+  }, [fetchAppointments]);
 
 
   useEffect(() => {
@@ -158,14 +171,13 @@ export default function HomePage() {
             return false;
         }
     }
-    
+
     try {
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        // Send date as ISO string for backend processing
         body: JSON.stringify({...newAppointmentData, date: newAppointmentData.date.toISOString()}),
       });
 
@@ -173,9 +185,8 @@ export default function HomePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to create appointment');
       }
-      
-      // const createdAppointment: Appointment = await response.json();
-      await fetchAppointments(); // Re-fetch all appointments to update the list
+
+      await fetchAppointments();
       return true;
 
     } catch (error) {
@@ -201,8 +212,8 @@ export default function HomePage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to delete appointment');
       }
-      
-      await fetchAppointments(); // Re-fetch all appointments to update the list
+
+      await fetchAppointments();
 
       if (appointmentToDelete) {
         toast({
@@ -212,7 +223,7 @@ export default function HomePage() {
               Appointment for <span className="font-semibold">{appointmentToDelete.name}</span> on <span className="font-semibold">{format(appointmentToDelete.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{appointmentToDelete.time}</span> has been canceled.
             </div>
           ),
-          variant: "destructive", // Keep destructive for cancellation feedback
+          variant: "destructive",
         });
       }
 
@@ -234,7 +245,7 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isLoading && appointments.length === 0) {
+  if (isLoading && appointments.length === 0 && !toast) { // Added !toast to avoid showing loading if a toast is already up from a failed fetch
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
             <Header />
