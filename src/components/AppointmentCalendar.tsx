@@ -10,6 +10,8 @@ import type { Appointment, Service } from '@/types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays } from 'date-fns';
 import { CalendarDays, Users, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 interface AppointmentCalendarProps {
   appointments: Appointment[];
@@ -19,6 +21,7 @@ interface AppointmentCalendarProps {
   onDeleteAppointment: (appointmentId: string) => void;
   timeSlots: string[];
   calendarView: 'week' | 'day';
+  onCalendarViewChange: (view: 'week' | 'day') => void;
 }
 
 const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
@@ -49,6 +52,7 @@ export default function AppointmentCalendar({
   onDeleteAppointment,
   timeSlots,
   calendarView,
+  onCalendarViewChange,
 }: AppointmentCalendarProps) {
   const [currentViewDays, setCurrentViewDays] = useState<Date[]>([]);
 
@@ -148,131 +152,141 @@ export default function AppointmentCalendar({
         </CardContent>
       </Card>
 
-      {/* Render grid view only if there's a selected date or currentViewDays are set */}
+      {/* Render tabs and grid view only if there's a selected date or currentViewDays are set */}
       {(selectedDate || currentViewDays.length > 0) && (
-        <Card className="shadow-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" onClick={handlePrev} aria-label={calendarView === 'week' ? "Previous week" : "Previous day"}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <CardTitle className="text-xl font-headline text-center">
-                 {getTitle()}
-              </CardTitle>
-              <Button variant="ghost" size="icon" onClick={handleNext} aria-label={calendarView === 'week' ? "Next week" : "Next day"}>
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+        <>
+          <div className="mb-4">
+              <Tabs value={calendarView} onValueChange={(value) => onCalendarViewChange(value as 'week' | 'day')} className="w-full md:w-auto">
+                <TabsList className="grid w-full grid-cols-2 md:inline-flex">
+                  <TabsTrigger value="week">Week View</TabsTrigger>
+                  <TabsTrigger value="day">Day View</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="w-full">
-              <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full"> {/* Adjusted min-width for better responsiveness */}
-                <div className="grid" style={{
-                  gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`,
-                  gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))`
-                }}>
 
-                  <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div> {/* Empty top-left cell */}
-
-
-                  {currentViewDays.map((day, dayIndex) => (
-                      <div key={format(day, "yyyy-MM-dd'-header'")} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
-                           className={`p-2 border-b border-r border-border font-semibold text-sm text-center sticky top-0 bg-card z-20 font-body ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
-                          {format(day, 'EEE')} <br /> {format(day, 'd')}
-                      </div>
-                  ))}
-
-
-                  {timeSlots.map((timeSlot, timeIndex) => (
-                      <React.Fragment key={`timeslot-row-${timeSlot}`}>
-
-                          <div style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
-                               className="p-2 border-b border-r border-border font-semibold text-xs h-full flex items-center justify-center bg-card sticky left-0 z-20 font-body">
-                              {timeSlot}
-                          </div>
-
-                          {currentViewDays.map((day, dayIndex) => (
-                              <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
-                                   style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                                   className="p-1 border-b border-r border-border min-h-[6rem] relative group">
-                                  {(() => {
-                                      const customers = getCustomersInSlot(day, timeSlot);
-                                      return customers > 0 ? (
-                                          <div className="absolute bottom-1 right-1 text-[10px] text-muted-foreground bg-background/70 px-1 rounded-sm font-body z-10">
-                                              {customers}/6
-                                          </div>
-                                      ) : null;
-                                  })()}
-                              </div>
-                          ))}
-                      </React.Fragment>
-                  ))}
-
-
-                  {appointments.map(app => {
-                      const dayIndex = currentViewDays.findIndex(d => isSameDay(new Date(app.date), d));
-                      if (dayIndex === -1) return null;
-
-                      const startTimeIndex = timeSlots.indexOf(app.time);
-                      if (startTimeIndex === -1) return null;
-
-                      const duration = app.services.length || 1;
-
-                      const serviceObjects = app.services.map(serviceId => {
-                        const serviceInfo = availableServices.find(s => s.id === serviceId);
-                        return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
-                      });
-
-                      const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
-
-                      return (
-                          <div
-                              key={app.id}
-                              className="bg-primary/20 p-1.5 rounded-md text-xs border border-primary/40 hover:bg-primary/30 m-0.5 shadow-sm flex flex-col"
-                              style={{
-                                  gridColumnStart: dayIndex + 2,
-                                  gridRowStart: startTimeIndex + 2,
-                                  gridRowEnd: `span ${duration}`,
-                                  zIndex: 5,
-                                  overflow: 'hidden',
-                                  position: 'relative',
-                              }}
-                          >
-                              <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
-                                  <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
-                                  <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-destructive hover:text-destructive/80 h-5 w-5 shrink-0"
-                                      onClick={() => onDeleteAppointment(app.id)}
-                                      aria-label="Delete appointment"
-                                  >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                              </div>
-                              <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                              <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}>
-                                  <ul className="mt-0.5 space-y-0.5">
-                                      {serviceObjects.map(service => {
-                                          const SvcIcon = getIcon(service.iconName);
-                                          return (
-                                          <li key={service.id} className="flex items-center text-muted-foreground font-body leading-tight">
-                                              <SvcIcon className="inline h-3 w-3 mr-1 text-secondary shrink-0"/>
-                                              <span className="truncate">{service.name}</span>
-                                          </li>
-                                      )})}
-                                  </ul>
-                              </ScrollArea>
-                          </div>
-                      );
-                  })}
-                </div>
+          <Card className="shadow-xl">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="icon" onClick={handlePrev} aria-label={calendarView === 'week' ? "Previous week" : "Previous day"}>
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <CardTitle className="text-xl font-headline text-center">
+                  {getTitle()}
+                </CardTitle>
+                <Button variant="ghost" size="icon" onClick={handleNext} aria-label={calendarView === 'week' ? "Next week" : "Next day"}>
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="w-full">
+                <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full"> {/* Adjusted min-width for better responsiveness */}
+                  <div className="grid" style={{
+                    gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`,
+                    gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))`
+                  }}>
+
+                    <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div> {/* Empty top-left cell */}
+
+
+                    {currentViewDays.map((day, dayIndex) => (
+                        <div key={format(day, "yyyy-MM-dd'-header'")} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
+                            className={`p-2 border-b border-r border-border font-semibold text-sm text-center sticky top-0 bg-card z-20 font-body ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
+                            {format(day, 'EEE')} <br /> {format(day, 'd')}
+                        </div>
+                    ))}
+
+
+                    {timeSlots.map((timeSlot, timeIndex) => (
+                        <React.Fragment key={`timeslot-row-${timeSlot}`}>
+
+                            <div style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
+                                className="p-2 border-b border-r border-border font-semibold text-xs h-full flex items-center justify-center bg-card sticky left-0 z-20 font-body">
+                                {timeSlot}
+                            </div>
+
+                            {currentViewDays.map((day, dayIndex) => (
+                                <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
+                                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
+                                    className="p-1 border-b border-r border-border min-h-[6rem] relative group">
+                                    {(() => {
+                                        const customers = getCustomersInSlot(day, timeSlot);
+                                        return customers > 0 ? (
+                                            <div className="absolute bottom-1 right-1 text-[10px] text-muted-foreground bg-background/70 px-1 rounded-sm font-body z-10">
+                                                {customers}/6
+                                            </div>
+                                        ) : null;
+                                    })()}
+                                </div>
+                            ))}
+                        </React.Fragment>
+                    ))}
+
+
+                    {appointments.map(app => {
+                        const dayIndex = currentViewDays.findIndex(d => isSameDay(new Date(app.date), d));
+                        if (dayIndex === -1) return null;
+
+                        const startTimeIndex = timeSlots.indexOf(app.time);
+                        if (startTimeIndex === -1) return null;
+
+                        const duration = app.services.length || 1;
+
+                        const serviceObjects = app.services.map(serviceId => {
+                          const serviceInfo = availableServices.find(s => s.id === serviceId);
+                          return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
+                        });
+
+                        const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
+
+                        return (
+                            <div
+                                key={app.id}
+                                className="bg-primary/20 p-1.5 rounded-md text-xs border border-primary/40 hover:bg-primary/30 m-0.5 shadow-sm flex flex-col"
+                                style={{
+                                    gridColumnStart: dayIndex + 2,
+                                    gridRowStart: startTimeIndex + 2,
+                                    gridRowEnd: `span ${duration}`,
+                                    zIndex: 5,
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                }}
+                            >
+                                <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
+                                    <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive/80 h-5 w-5 shrink-0"
+                                        onClick={() => onDeleteAppointment(app.id)}
+                                        aria-label="Delete appointment"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                </div>
+                                <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
+                                <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}>
+                                    <ul className="mt-0.5 space-y-0.5">
+                                        {serviceObjects.map(service => {
+                                            const SvcIcon = getIcon(service.iconName);
+                                            return (
+                                            <li key={service.id} className="flex items-center text-muted-foreground font-body leading-tight">
+                                                <SvcIcon className="inline h-3 w-3 mr-1 text-secondary shrink-0"/>
+                                                <span className="truncate">{service.name}</span>
+                                            </li>
+                                        )})}
+                                    </ul>
+                                </ScrollArea>
+                            </div>
+                        );
+                    })}
+                  </div>
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );
 }
-

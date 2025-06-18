@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowUpCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { format, isSameDay } from 'date-fns';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const availableServices: Service[] = [
   { id: 'hands', name: 'Nails (Hands)', iconName: 'Hand' },
@@ -193,14 +192,6 @@ export default function HomePage() {
             />
           </section>
           <section className="lg:col-span-3">
-            <div className="mb-4">
-              <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'week' | 'day')} className="w-full md:w-auto">
-                <TabsList className="grid w-full grid-cols-2 md:inline-flex">
-                  <TabsTrigger value="week">Week View</TabsTrigger>
-                  <TabsTrigger value="day">Day View</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
             <AppointmentCalendar
               appointments={appointments}
               availableServices={availableServices}
@@ -209,6 +200,7 @@ export default function HomePage() {
               onDeleteAppointment={deleteAppointment}
               timeSlots={timeSlots}
               calendarView={calendarView}
+              onCalendarViewChange={setCalendarView}
             />
           </section>
         </div>
