@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,7 +33,7 @@ const formSchema = z.object({
   time: z.string({ required_error: 'Please select a time.' }).min(1, 'Please select a time.'),
   services: z.array(z.string()).min(1, { message: 'Please select at least one service.' }),
   groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3. Combined group size for a time slot cannot exceed 6."),
-  phoneNumber: z.string().optional().refine(val => !val || /^\+?[0-9\s\-()]{7,15}$/.test(val), { // Basic validation, allows digits, spaces, hyphens, parens, optional +
+  phoneNumber: z.string().optional().refine(val => !val || /^\+?[0-9\s\-()]{7,15}$/.test(val), {
     message: "Please enter a valid phone number (7-15 digits, optional +).",
   }),
 });
@@ -59,7 +59,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
   useEffect(() => {
     if (!watchedDate) {
-      setFilteredTimeSlots([]); 
+      setFilteredTimeSlots([]);
       if (form.getValues('time')) {
         form.setValue('time', '', { shouldValidate: true });
       }
@@ -73,7 +73,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
       const currentHour = getHours(now);
       currentAvailableSlots = currentAvailableSlots.filter(slot => {
         const slotHour = parseInt(slot.split(':')[0]);
-        return slotHour > currentHour; 
+        return slotHour > currentHour;
       });
     }
 
@@ -86,7 +86,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
           const appointmentDuration = appointment.services.length || 1;
           const slotToCheckIndex = allTimeSlots.indexOf(slotToCheck);
-          if (slotToCheckIndex === -1) continue; 
+          if (slotToCheckIndex === -1) continue;
 
           if (slotToCheckIndex >= appointmentStartTimeIndex && slotToCheckIndex < (appointmentStartTimeIndex + appointmentDuration)) {
             customersInThisSlot += appointment.groupSize;
@@ -109,7 +109,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
   function onSubmit(values: z.infer<typeof formSchema>) {
     const submissionValues = {
       ...values,
-      phoneNumber: values.phoneNumber || undefined, // Ensure empty string becomes undefined
+      phoneNumber: values.phoneNumber || undefined,
     };
     const success = onAddAppointment(submissionValues);
     if (success) {
@@ -123,7 +123,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
         variant: "default",
       });
       form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1, phoneNumber: '' });
-      setIsDatePopoverOpen(false); 
+      setIsDatePopoverOpen(false);
     }
   }
 
@@ -168,7 +168,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                 <FormItem>
                   <FormLabel className="font-semibold font-body flex items-center text-sm"><Phone className="mr-2 h-4 w-4" />Phone Number (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="e.g., +1 123 456 7890" {...field} value={field.value ?? ''} className="font-body" />
+                    <Input type="tel" placeholder="+420" {...field} value={field.value ?? ''} className="font-body" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -250,13 +250,10 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
               name="services"
               render={() => (
                 <FormItem>
-                  <div className="mb-1"> 
+                  <div className="mb-1">
                     <FormLabel className="text-base font-semibold font-body flex items-center text-sm">
                       <Sparkles className="mr-2 h-4 w-4" />Services
                     </FormLabel>
-                    <FormDescription className="font-body text-xs">
-                      Select all services you'd like to book.
-                    </FormDescription>
                   </div>
                   {availableServices.map((service) => {
                     const IconComponent = getIcon(service.iconName);
@@ -269,7 +266,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                         return (
                           <FormItem
                             key={service.id}
-                            className="flex flex-row items-center space-x-2 space-y-0 mb-0.5 p-1.5 border rounded-md hover:bg-accent/50 transition-colors" 
+                            className="flex flex-row items-center space-x-2 space-y-0 mb-0.5 p-1.5 border rounded-md hover:bg-accent/50 transition-colors"
                           >
                             <FormControl>
                               <Checkbox
@@ -317,7 +314,6 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription className="font-body text-xs">Total customers for any time slot cannot exceed 6.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
