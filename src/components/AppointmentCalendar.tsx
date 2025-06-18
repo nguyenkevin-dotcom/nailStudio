@@ -216,15 +216,26 @@ export default function AppointmentCalendar({
                             {currentViewDays.map((day, dayIndex) => (
                                 <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
                                     style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                                    className="p-1 border-b border-r border-border min-h-[6rem] relative group">
-                                    {(() => {
-                                        const customers = getCustomersInSlot(day, timeSlot);
-                                        return customers > 0 ? (
-                                            <div className="absolute bottom-1 right-1 text-[10px] text-muted-foreground bg-background/70 px-1 rounded-sm font-body z-10">
-                                                {customers}/6
-                                            </div>
-                                        ) : null;
-                                    })()}
+                                    className={`border-b border-r border-border min-h-[6rem] relative group ${calendarView === 'week' ? 'flex items-center justify-center' : 'p-1' }`}>
+                                    {calendarView === 'week' ? (
+                                        (() => {
+                                            const customers = getCustomersInSlot(day, timeSlot);
+                                            return (
+                                                <div className={`text-center font-body ${customers > 0 ? 'text-lg text-primary font-semibold' : 'text-base text-muted-foreground/70'}`}>
+                                                    {customers}/6
+                                                </div>
+                                            );
+                                        })()
+                                    ) : ( // Day View
+                                        (() => {
+                                            const customers = getCustomersInSlot(day, timeSlot);
+                                            return customers > 0 ? (
+                                                <div className="absolute bottom-1 right-1 text-[10px] text-muted-foreground bg-background/70 px-1 rounded-sm font-body z-10">
+                                                    {customers}/6
+                                                </div>
+                                            ) : null;
+                                        })()
+                                    )}
                                 </div>
                             ))}
                         </React.Fragment>
