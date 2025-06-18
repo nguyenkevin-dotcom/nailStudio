@@ -123,13 +123,25 @@ export default function AppointmentCalendar({
 
   const processedAppointments = useMemo(() => {
     const startTimeCounts: { [key: string]: number } = {};
-    return appointments.map(app => {
+    // Sort appointments by creation time or ID to ensure consistent overlap order
+    const sortedAppointments = [...appointments].sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        const timeAIndex = timeSlots.indexOf(a.time);
+        const timeBIndex = timeSlots.indexOf(b.time);
+        if (timeAIndex !== timeBIndex) return timeAIndex - timeBIndex;
+        // Fallback to ID for consistent ordering if all else is equal
+        return a.id.localeCompare(b.id);
+    });
+
+    return sortedAppointments.map(app => {
       const appDate = new Date(app.date);
       const key = `${format(appDate, 'yyyy-MM-dd')}-${app.time}`;
       startTimeCounts[key] = (startTimeCounts[key] || 0) + 1;
       return { ...app, overlapIndex: startTimeCounts[key] - 1 };
     });
-  }, [appointments]);
+  }, [appointments, timeSlots]);
 
 
   return (
@@ -216,7 +228,7 @@ export default function AppointmentCalendar({
                             {currentViewDays.map((day, dayIndex) => (
                                 <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
                                     style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                                    className={`border-b border-r border-border min-h-[6rem] relative group flex items-center justify-center`}>
+                                    className={`border-b border-r border-border min-h-[6rem] relative group flex items-center justify-center p-0`}>
                                     {calendarView === 'week' ? (
                                         (() => {
                                             const customers = getCustomersInSlot(day, timeSlot);
@@ -227,7 +239,7 @@ export default function AppointmentCalendar({
                                                 textColorClass = 'text-lg font-semibold text-primary';
                                             }
                                             return (
-                                                <div className={`text-center font-body ${textColorClass}`}>
+                                                <div className={`w-full h-full flex items-center justify-center font-body ${textColorClass}`}>
                                                     {customers}/6
                                                 </div>
                                             );
@@ -270,7 +282,7 @@ export default function AppointmentCalendar({
                             
                             const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; 
 
-                            const overlapOffsetAmount = 4; 
+                            const overlapOffsetAmount = 10; // Increased offset
                             const offset = app.overlapIndex * overlapOffsetAmount;
                             const dynamicZIndex = 5 + app.overlapIndex;
 
@@ -286,6 +298,7 @@ export default function AppointmentCalendar({
                                         overflow: 'hidden',
                                         position: 'relative', 
                                         transform: `translate(${offset}px, ${offset}px)`,
+                                        maxWidth: `calc(100% - ${app.overlapIndex > 0 ? offset : 0}px)`, // Ensure card doesn't overflow grid cell too much
                                     }}
                                 >
                                     <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -301,7 +314,7 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3rem)` }}>
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.5rem)` }}> {/* Adjusted maxHeight slightly for better header fit */}
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
