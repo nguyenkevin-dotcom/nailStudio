@@ -121,27 +121,43 @@ export default function AppointmentCalendar({
         : format(today, 'EEEE, MMM do, yyyy');
   };
 
-  const processedAppointments = useMemo(() => {
-    const startTimeCounts: { [key: string]: number } = {};
-    // Sort appointments by creation time or ID to ensure consistent overlap order
-    const sortedAppointments = [...appointments].sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        if (dateA !== dateB) return dateA - dateB;
+  const dayViewAppointmentsData = useMemo(() => {
+    if (calendarView !== 'day' || currentViewDays.length === 0) {
+      return [];
+    }
+
+    const selectedDayToRender = currentViewDays[0];
+    const appointmentsOnSelectedDay = appointments
+      .filter(app => isSameDay(new Date(app.date), selectedDayToRender))
+      .sort((a, b) => { // Consistent sort order for stable horizontal indexing
         const timeAIndex = timeSlots.indexOf(a.time);
         const timeBIndex = timeSlots.indexOf(b.time);
         if (timeAIndex !== timeBIndex) return timeAIndex - timeBIndex;
-        // Fallback to ID for consistent ordering if all else is equal
-        return a.id.localeCompare(b.id);
-    });
+        return a.id.localeCompare(b.id); // Fallback to ID for stable ordering
+      });
 
-    return sortedAppointments.map(app => {
-      const appDate = new Date(app.date);
-      const key = `${format(appDate, 'yyyy-MM-dd')}-${app.time}`;
-      startTimeCounts[key] = (startTimeCounts[key] || 0) + 1;
-      return { ...app, overlapIndex: startTimeCounts[key] - 1 };
-    });
-  }, [appointments, timeSlots]);
+    const appointmentsByStartTime: { [time: string]: Appointment[] } = {};
+    for (const app of appointmentsOnSelectedDay) {
+      if (!appointmentsByStartTime[app.time]) {
+        appointmentsByStartTime[app.time] = [];
+      }
+      appointmentsByStartTime[app.time].push(app);
+    }
+
+    const processed: (Appointment & { horizontalOverlapCount: number; horizontalOverlapIndex: number })[] = [];
+    for (const time in appointmentsByStartTime) {
+      const group = appointmentsByStartTime[time];
+      // The group is already sorted by ID if times are the same due to the initial sort.
+      group.forEach((app, index) => {
+        processed.push({
+          ...app,
+          horizontalOverlapCount: group.length,
+          horizontalOverlapIndex: index,
+        });
+      });
+    }
+    return processed;
+  }, [appointments, timeSlots, calendarView, currentViewDays]);
 
 
   return (
@@ -261,14 +277,14 @@ export default function AppointmentCalendar({
 
 
                     {calendarView === 'day' &&
-                        processedAppointments.map(app => {
+                        dayViewAppointmentsData.map(app => {
                             const appDate = new Date(app.date);
-
+                            // This check is technically redundant if dayViewAppointmentsData is correctly filtered, but safe
                             if (currentViewDays.length === 0 || !isSameDay(appDate, currentViewDays[0])) {
                               return null;
                             }
                             
-                            const dayGridColumnIndex = 0; 
+                            const dayGridColumnIndex = 0; // In day view, appointments are in the first (and only) data column
 
                             const startTimeIndex = timeSlots.indexOf(app.time);
                             if (startTimeIndex === -1) return null;
@@ -280,26 +296,29 @@ export default function AppointmentCalendar({
                               return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                             });
                             
-                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5; 
+                            const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5;
+                            
+                            const { horizontalOverlapCount, horizontalOverlapIndex } = app;
 
-                            const overlapOffsetAmount = 10; // Increased offset
-                            const offset = app.overlapIndex * overlapOffsetAmount;
-                            const dynamicZIndex = 5 + app.overlapIndex;
+                            const dynamicStyles: React.CSSProperties = {
+                                gridColumnStart: dayGridColumnIndex + 2,
+                                gridRowStart: startTimeIndex + 2,
+                                gridRowEnd: `span ${duration}`,
+                                zIndex: 5 + (horizontalOverlapIndex || 0),
+                                overflow: 'hidden',
+                                position: 'relative',
+                            };
+
+                            if (horizontalOverlapCount && horizontalOverlapCount > 1) {
+                                dynamicStyles.width = `calc(100% / ${horizontalOverlapCount})`;
+                                dynamicStyles.left = `calc(${(horizontalOverlapIndex || 0)} * (100% / ${horizontalOverlapCount}))`;
+                            }
 
                             return (
                                 <div
                                     key={app.id}
                                     className="bg-primary/20 p-1.5 rounded-md text-xs border border-primary/40 hover:bg-primary/30 m-0.5 shadow-sm flex flex-col"
-                                    style={{
-                                        gridColumnStart: dayGridColumnIndex + 2, 
-                                        gridRowStart: startTimeIndex + 2,
-                                        gridRowEnd: `span ${duration}`,
-                                        zIndex: dynamicZIndex,
-                                        overflow: 'hidden',
-                                        position: 'relative', 
-                                        transform: `translate(${offset}px, ${offset}px)`,
-                                        maxWidth: `calc(100% - ${app.overlapIndex > 0 ? offset : 0}px)`, // Ensure card doesn't overflow grid cell too much
-                                    }}
+                                    style={dynamicStyles}
                                 >
                                     <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
                                         <p className="font-semibold text-primary truncate font-body flex-grow mr-1">{app.name}</p>
@@ -314,7 +333,7 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.5rem)` }}> {/* Adjusted maxHeight slightly for better header fit */}
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.5rem)` }}>
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
