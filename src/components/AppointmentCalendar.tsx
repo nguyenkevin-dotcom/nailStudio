@@ -18,16 +18,16 @@ interface AppointmentCalendarProps {
   selectedDate: Date | undefined;
   onDeleteAppointment: (appointmentId: string) => void;
   timeSlots: string[];
+  calendarView: 'week' | 'day';
 }
 
 const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
   if (iconName === 'Default' || !LucideIcons[iconName]) {
-    return LucideIcons.Sparkles; // Default icon
+    return LucideIcons.Sparkles; 
   }
   return LucideIcons[iconName] as React.ElementType;
 };
 
-// Helper function to check if an appointment (potentially multi-hour) covers a specific slot on a day
 const appointmentCoversSlot = (appointment: Appointment, day: Date, slot: string, allTimeSlots: string[]): boolean => {
   if (!isSameDay(new Date(appointment.date), day)) {
     return false;
@@ -36,7 +36,7 @@ const appointmentCoversSlot = (appointment: Appointment, day: Date, slot: string
   const slotIndex = allTimeSlots.indexOf(slot);
   if (appointmentStartIndex === -1 || slotIndex === -1) return false;
 
-  const duration = appointment.services.length || 1; // Each service is 1 hour
+  const duration = appointment.services.length || 1; 
   return slotIndex >= appointmentStartIndex && slotIndex < (appointmentStartIndex + duration);
 };
 
@@ -48,23 +48,22 @@ export default function AppointmentCalendar({
   selectedDate,
   onDeleteAppointment,
   timeSlots,
+  calendarView,
 }: AppointmentCalendarProps) {
-  const [currentWeekDays, setCurrentWeekDays] = useState<Date[]>([]);
+  const [currentViewDays, setCurrentViewDays] = useState<Date[]>([]);
 
   useEffect(() => {
-    if (selectedDate) {
-      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-      const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-      setCurrentWeekDays(daysInWeek);
-    } else {
-      // If no date is selected, show the current week by default or an empty state
-      const today = new Date();
-      const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-      setCurrentWeekDays(eachDayOfInterval({ start: weekStart, end: weekEnd }));
+    const baseDate = selectedDate || new Date(); 
+
+    if (calendarView === 'week') {
+      const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 });
+      const daysInView = eachDayOfInterval({ start: weekStart, end: weekEnd });
+      setCurrentViewDays(daysInView);
+    } else { // calendarView === 'day'
+      setCurrentViewDays([baseDate]);
     }
-  }, [selectedDate]);
+  }, [selectedDate, calendarView]);
 
   const DayContentWithDot: CalendarProps['components']['DayContent'] = ({ date }) => {
     const isBooked = appointments.some(app => isSameDay(new Date(app.date), date));
@@ -77,27 +76,46 @@ export default function AppointmentCalendar({
     );
   };
   
-  // Get total customers for a slot, considering multi-hour appointments
   const getCustomersInSlot = (day: Date, timeSlot: string): number => {
     return appointments
       .filter(app => appointmentCoversSlot(app, day, timeSlot, timeSlots))
       .reduce((sum, app) => sum + app.groupSize, 0);
   };
 
-  const handlePrevWeek = () => {
-    if (selectedDate) {
-      onCalendarDayClick(subDays(selectedDate, 7));
-    } else { // If no selectedDate, navigate from today's week
-      onCalendarDayClick(subDays(new Date(), 7));
+  const handlePrev = () => {
+    const currentBase = selectedDate || new Date();
+    if (calendarView === 'week') {
+      onCalendarDayClick(subDays(currentBase, 7));
+    } else {
+      onCalendarDayClick(subDays(currentBase, 1));
     }
   };
 
-  const handleNextWeek = () => {
-     if (selectedDate) {
-      onCalendarDayClick(addDays(selectedDate, 7));
+  const handleNext = () => {
+     const currentBase = selectedDate || new Date();
+     if (calendarView === 'week') {
+      onCalendarDayClick(addDays(currentBase, 7));
     } else {
-      onCalendarDayClick(addDays(new Date(), 7));
+      onCalendarDayClick(addDays(currentBase, 1));
     }
+  };
+
+  const getTitle = () => {
+    if (currentViewDays.length === 0 && selectedDate) {
+        return calendarView === 'week' 
+            ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
+            : format(selectedDate, 'EEEE, MMM do, yyyy');
+    }
+    if (currentViewDays.length > 0) {
+        return calendarView === 'week'
+            ? `${format(currentViewDays[0], 'MMM do')} - ${format(currentViewDays[currentViewDays.length - 1], 'MMM do, yyyy')}`
+            : format(currentViewDays[0], 'EEEE, MMM do, yyyy');
+    }
+    // Fallback if selectedDate is also undefined initially, though HomePage tries to set it.
+    const today = new Date();
+    return calendarView === 'week'
+        ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(today, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
+        : format(today, 'EEEE, MMM do, yyyy');
   };
 
 
@@ -125,53 +143,55 @@ export default function AppointmentCalendar({
               today: 'bg-accent text-accent-foreground',
             }}
             initialFocus={!!selectedDate}
+            weekStartsOn={1} // Monday
           />
         </CardContent>
       </Card>
 
-      {currentWeekDays.length > 0 && (
+      {/* Render grid view only if there's a selected date or currentViewDays are set */}
+      {(selectedDate || currentViewDays.length > 0) && (
         <Card className="shadow-xl">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" onClick={handlePrevWeek} aria-label="Previous week">
+              <Button variant="ghost" size="icon" onClick={handlePrev} aria-label={calendarView === 'week' ? "Previous week" : "Previous day"}>
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <CardTitle className="text-xl font-headline text-center">
-                 {format(currentWeekDays[0], 'MMM do')} - {format(currentWeekDays[currentWeekDays.length - 1], 'MMM do, yyyy')}
+                 {getTitle()}
               </CardTitle>
-              <Button variant="ghost" size="icon" onClick={handleNextWeek} aria-label="Next week">
+              <Button variant="ghost" size="icon" onClick={handleNext} aria-label={calendarView === 'week' ? "Next week" : "Next day"}>
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             <ScrollArea className="w-full">
-              <div className="min-w-[700px] lg:min-w-full">
+              <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full"> {/* Adjusted min-width for better responsiveness */}
                 <div className="grid" style={{
-                  gridTemplateColumns: `auto repeat(${currentWeekDays.length}, minmax(100px, 1fr))`, // minmax for column width
-                  gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))` // min height for slots, auto for content
+                  gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`, 
+                  gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))` 
                 }}>
-                  {/* Top-left empty cell - for sticky positioning alignment */}
-                  <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div>
+                  
+                  <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div> {/* Empty top-left cell */}
 
-                  {/* Day Headers */}
-                  {currentWeekDays.map((day, dayIndex) => (
-                      <div key={`header-${format(day, 'yyyy-MM-dd')}`} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
+                  
+                  {currentViewDays.map((day, dayIndex) => (
+                      <div key={format(day, 'yyyy-MM-dd-header')} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
                            className={`p-2 border-b border-r border-border font-semibold text-sm text-center sticky top-0 bg-card z-20 font-body ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
                           {format(day, 'EEE')} <br /> {format(day, 'd')}
                       </div>
                   ))}
 
-                  {/* Time Slot Labels and Empty Grid Cells for structure */}
+                  
                   {timeSlots.map((timeSlot, timeIndex) => (
                       <React.Fragment key={`timeslot-row-${timeSlot}`}>
-                          {/* Time Label */}
+                          
                           <div style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
                                className="p-2 border-b border-r border-border font-semibold text-xs h-full flex items-center justify-center bg-card sticky left-0 z-20 font-body">
                               {timeSlot}
                           </div>
-                          {/* Empty cells for each day in this time slot (placeholders with customer count) */}
-                          {currentWeekDays.map((day, dayIndex) => (
+                          
+                          {currentViewDays.map((day, dayIndex) => (
                               <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
                                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
                                    className="p-1 border-b border-r border-border min-h-[6rem] relative group">
@@ -188,32 +208,22 @@ export default function AppointmentCalendar({
                       </React.Fragment>
                   ))}
 
-                  {/* Render Appointments on top of the grid cells */}
+                  
                   {appointments.map(app => {
-                      const dayIndex = currentWeekDays.findIndex(d => isSameDay(new Date(app.date), d));
-                      if (dayIndex === -1) return null; // Appointment not in current week
+                      const dayIndex = currentViewDays.findIndex(d => isSameDay(new Date(app.date), d));
+                      if (dayIndex === -1) return null; 
 
                       const startTimeIndex = timeSlots.indexOf(app.time);
-                      if (startTimeIndex === -1) return null; // Appointment start time invalid
+                      if (startTimeIndex === -1) return null; 
 
                       const duration = app.services.length || 1;
-                      if (startTimeIndex + duration > timeSlots.length && duration > 0) { // Only render if it starts within visible slots
-                        // This check might be too aggressive, if it starts at 19:00 and is 1 hour, it's fine.
-                        // It should not render if it STARTS beyond the last slot.
-                        // If it ENDS beyond, it should be truncated or handled by page.tsx logic.
-                        // For display, we'll just ensure it has a start index.
-                      }
-
-
+                      
                       const serviceObjects = app.services.map(serviceId => {
                         const serviceInfo = availableServices.find(s => s.id === serviceId);
                         return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                       });
                       
-                      // Max height for appointment card, e.g., 6rem per hour slot.
-                      // Duration needs to be at least 1.
                       const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
-
 
                       return (
                           <div
@@ -223,9 +233,9 @@ export default function AppointmentCalendar({
                                   gridColumnStart: dayIndex + 2,
                                   gridRowStart: startTimeIndex + 2,
                                   gridRowEnd: `span ${duration}`,
-                                  zIndex: 5, // Above grid lines but below sticky headers/labels
-                                  overflow: 'hidden', // Content within card might scroll
-                                  position: 'relative', // For absolute positioned delete button
+                                  zIndex: 5, 
+                                  overflow: 'hidden', 
+                                  position: 'relative', 
                               }}
                           >
                               <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -241,7 +251,7 @@ export default function AppointmentCalendar({
                                   </Button>
                               </div>
                               <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                              <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}> {/* approx height of header elements */}
+                              <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}> 
                                   <ul className="mt-0.5 space-y-0.5">
                                       {serviceObjects.map(service => {
                                           const SvcIcon = getIcon(service.iconName);

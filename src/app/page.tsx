@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowUpCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { format, isSameDay } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const availableServices: Service[] = [
   { id: 'hands', name: 'Nails (Hands)', iconName: 'Hand' },
@@ -24,8 +25,9 @@ const timeSlots = [
 
 export default function HomePage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [calendarView, setCalendarView] = useState<'week' | 'day'>('week');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,8 +44,8 @@ export default function HomePage() {
         localStorage.removeItem('glamBookAppointments');
       }
     }
-    if (!selectedDate && appointments.length === 0) {
-        setSelectedDate(new Date());
+    if (!selectedDate) {
+        setSelectedDate(new Date()); // Ensure selectedDate is initialized
     }
   }, []);
 
@@ -65,21 +67,19 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Helper function to determine if an existing appointment occupies a specific time slot
   const isSlotOccupiedByAppointment = (appointment: Appointment, slotToCheck: string, allTimeSlots: string[]): boolean => {
     const appointmentStartTimeIndex = allTimeSlots.indexOf(appointment.time);
-    if (appointmentStartTimeIndex === -1) return false; // Appointment start time not in list
+    if (appointmentStartTimeIndex === -1) return false;
 
-    const appointmentDuration = appointment.services.length || 1; // Ensure duration is at least 1
+    const appointmentDuration = appointment.services.length || 1;
     const slotToCheckIndex = allTimeSlots.indexOf(slotToCheck);
-    if (slotToCheckIndex === -1) return false; // Slot to check not in list
+    if (slotToCheckIndex === -1) return false;
 
-    // True if slotToCheck is within the appointment's duration
     return slotToCheckIndex >= appointmentStartTimeIndex && slotToCheckIndex < (appointmentStartTimeIndex + appointmentDuration);
   };
 
   const addAppointment = (newAppointmentData: Omit<Appointment, 'id'>) => {
-    const appointmentDuration = newAppointmentData.services.length;
+    const appointmentDuration = newAppointmentData.services.length || 1;
     if (appointmentDuration === 0) {
       toast({
         title: "No Services Selected",
@@ -99,7 +99,6 @@ export default function HomePage() {
         return false;
     }
 
-    // Check if the appointment extends beyond available time slots
     if (newAppointmentStartTimeIndex + appointmentDuration > timeSlots.length) {
         toast({
             title: "Booking Too Long",
@@ -118,7 +117,6 @@ export default function HomePage() {
         occupiedSlotsByNewAppointment.push(timeSlots[newAppointmentStartTimeIndex + i]);
     }
 
-    // Check capacity for each slot the new appointment would occupy
     for (const slot of occupiedSlotsByNewAppointment) {
         const appointmentsOnSameDateAtSlot = appointments.filter(
             app =>
@@ -139,16 +137,14 @@ export default function HomePage() {
                 ),
                 variant: "destructive",
             });
-            return false; // Indicate failure
+            return false;
         }
     }
 
-    // If all checks pass, add the appointment
     const newId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
     const appointmentWithId = { ...newAppointmentData, id: newId };
     setAppointments(prev => {
         const updatedAppointments = [...prev, appointmentWithId];
-        // Sort by date, then by time
         updatedAppointments.sort((a, b) => {
           const dateComparison = a.date.getTime() - b.date.getTime();
           if (dateComparison !== 0) return dateComparison;
@@ -156,7 +152,7 @@ export default function HomePage() {
         });
         return updatedAppointments;
     });
-    return true; // Indicate success
+    return true;
   };
 
 
@@ -197,6 +193,14 @@ export default function HomePage() {
             />
           </section>
           <section className="lg:col-span-3">
+            <div className="mb-4">
+              <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'week' | 'day')} className="w-full md:w-auto">
+                <TabsList className="grid w-full grid-cols-2 md:inline-flex">
+                  <TabsTrigger value="week">Week View</TabsTrigger>
+                  <TabsTrigger value="day">Day View</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
             <AppointmentCalendar
               appointments={appointments}
               availableServices={availableServices}
@@ -204,6 +208,7 @@ export default function HomePage() {
               selectedDate={selectedDate}
               onDeleteAppointment={deleteAppointment}
               timeSlots={timeSlots}
+              calendarView={calendarView}
             />
           </section>
         </div>
