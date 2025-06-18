@@ -44,7 +44,7 @@ export default function HomePage() {
       }
     }
     if (!selectedDate) {
-        setSelectedDate(new Date()); // Ensure selectedDate is initialized
+        setSelectedDate(new Date()); 
     }
   }, []);
 
@@ -189,6 +189,7 @@ export default function HomePage() {
               availableServices={availableServices}
               timeSlots={timeSlots}
               onAddAppointment={addAppointment}
+              appointments={appointments}
             />
           </section>
           <section className="lg:col-span-3">

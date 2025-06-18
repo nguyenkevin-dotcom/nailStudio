@@ -15,14 +15,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle } from 'lucide-react';
 import type { Service, Appointment } from '@/types';
-import { format } from 'date-fns';
+import { format, isSameDay, getHours } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import * as LucideIcons from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface SchedulingFormProps {
   availableServices: Service[];
   timeSlots: string[];
-  onAddAppointment: (data: Omit<Appointment, 'id'>) => boolean; // Returns true on success, false on failure (e.g. limit reached)
+  onAddAppointment: (data: Omit<Appointment, 'id'>) => boolean;
+  appointments: Appointment[];
 }
 
 const formSchema = z.object({
@@ -33,8 +35,10 @@ const formSchema = z.object({
   groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3. Combined group size for a time slot cannot exceed 6."),
 });
 
-export default function SchedulingForm({ availableServices, timeSlots, onAddAppointment }: SchedulingFormProps) {
+export default function SchedulingForm({ availableServices, timeSlots: allTimeSlots, onAddAppointment, appointments }: SchedulingFormProps) {
   const { toast } = useToast();
+  const [filteredTimeSlots, setFilteredTimeSlots] = useState<string[]>(allTimeSlots);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,6 +50,61 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
     },
   });
 
+  const watchedDate = form.watch('date');
+
+  useEffect(() => {
+    if (!watchedDate) {
+      setFilteredTimeSlots([]); // Or allTimeSlots if you want to show them before date selection
+      if (form.getValues('time')) {
+        form.setValue('time', '', { shouldValidate: true });
+      }
+      return;
+    }
+
+    let currentAvailableSlots = [...allTimeSlots];
+
+    // 1. Filter by current time if selected date is today
+    if (isSameDay(watchedDate, new Date())) {
+      const now = new Date();
+      const currentHour = getHours(now);
+      currentAvailableSlots = currentAvailableSlots.filter(slot => {
+        const slotHour = parseInt(slot.split(':')[0]);
+        return slotHour > currentHour; // Only allow slots strictly after the current hour
+      });
+    }
+
+    // 2. Filter by slot capacity (remove slots that are completely full)
+    currentAvailableSlots = currentAvailableSlots.filter(slotToCheck => {
+      let customersInThisSlot = 0;
+      for (const appointment of appointments) {
+        if (isSameDay(new Date(appointment.date), watchedDate)) {
+          const appointmentStartTimeIndex = allTimeSlots.indexOf(appointment.time);
+          if (appointmentStartTimeIndex === -1) continue;
+
+          const appointmentDuration = appointment.services.length || 1;
+          const slotToCheckIndex = allTimeSlots.indexOf(slotToCheck);
+          if (slotToCheckIndex === -1) continue; // Should not happen if slotToCheck is from allTimeSlots
+
+          // Check if the 'appointment' covers 'slotToCheck'
+          if (slotToCheckIndex >= appointmentStartTimeIndex && slotToCheckIndex < (appointmentStartTimeIndex + appointmentDuration)) {
+            customersInThisSlot += appointment.groupSize;
+          }
+        }
+      }
+      return customersInThisSlot < 6;
+    });
+
+    setFilteredTimeSlots(currentAvailableSlots);
+
+    // Reset selected time if it's no longer in the filtered list
+    const currentSelectedTime = form.getValues('time');
+    if (currentSelectedTime && !currentAvailableSlots.includes(currentSelectedTime)) {
+      form.setValue('time', '', { shouldValidate: true });
+    }
+
+  }, [watchedDate, appointments, allTimeSlots, form]);
+
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     const success = onAddAppointment(values);
     if (success) {
@@ -56,11 +115,12 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
             Appointment for <span className="font-semibold">{values.name}</span> on <span className="font-semibold">{format(values.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{values.time}</span> is booked.
           </div>
         ),
-        variant: "default", 
+        variant: "default",
       });
       form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1 });
+      // After reset, date is undefined, so useEffect will clear filteredTimeSlots
+      // and the time field.
     }
-    // If not successful, the toast is handled by onAddAppointment in page.tsx
   }
 
   const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
@@ -82,7 +142,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3"> {/* Reduced space-y */}
             <FormField
               control={form.control}
               name="name"
@@ -127,7 +187,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date > new Date(new Date().setDate(new Date().getDate() + 90)) } // Disable past dates and dates more than 90 days in future
+                        disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date > new Date(new Date().setDate(new Date().getDate() + 90)) }
                         initialFocus
                       />
                     </PopoverContent>
@@ -143,14 +203,18 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="font-semibold font-body flex items-center text-sm"><Clock className="mr-2 h-4 w-4" />Time</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!watchedDate || filteredTimeSlots.length === 0}
+                  >
                     <FormControl>
                       <SelectTrigger className="font-body">
-                        <SelectValue placeholder="Select a time slot" />
+                        <SelectValue placeholder={!watchedDate ? "Select a date first" : (filteredTimeSlots.length === 0 ? "No slots available" : "Select a time slot")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {timeSlots.map(slot => (
+                      {filteredTimeSlots.map(slot => (
                         <SelectItem key={slot} value={slot} className="font-body">{slot}</SelectItem>
                       ))}
                     </SelectContent>
@@ -159,13 +223,13 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="services"
               render={() => (
                 <FormItem>
-                  <div className="mb-2">
+                  <div className="mb-1"> {/* Reduced mb */}
                     <FormLabel className="text-base font-semibold font-body flex items-center text-sm">
                       <Sparkles className="mr-2 h-4 w-4" />Services
                     </FormLabel>
@@ -184,7 +248,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                         return (
                           <FormItem
                             key={service.id}
-                            className="flex flex-row items-center space-x-3 space-y-0 mb-1 p-2 border rounded-md hover:bg-accent/50 transition-colors"
+                            className="flex flex-row items-center space-x-2 space-y-0 mb-0.5 p-1.5 border rounded-md hover:bg-accent/50 transition-colors" /* Reduced space, mb, p */
                           >
                             <FormControl>
                               <Checkbox
@@ -201,7 +265,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                               />
                             </FormControl>
                             <FormLabel className="font-normal font-body text-sm flex items-center cursor-pointer w-full">
-                              <IconComponent className="mr-2 h-5 w-5 text-primary" />
+                              <IconComponent className="mr-2 h-4 w-4 text-primary" /> {/* Reduced icon size */}
                               {service.name}
                             </FormLabel>
                           </FormItem>
@@ -220,7 +284,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="font-semibold font-body flex items-center text-sm"><Users className="mr-2 h-4 w-4" />Group Size (max 3 per booking)</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={String(field.value)} value={String(field.value)}>
+                  <Select onValueChange={(value) => field.onChange(parseInt(value))} value={String(field.value)}>
                     <FormControl>
                       <SelectTrigger className="font-body">
                         <SelectValue placeholder="Select number of people" />
@@ -237,7 +301,7 @@ export default function SchedulingForm({ availableServices, timeSlots, onAddAppo
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full font-body text-base py-3">Book Appointment</Button>
+            <Button type="submit" className="w-full font-body text-sm py-2.5">Book Appointment</Button> {/* Reduced text size and padding */}
           </form>
         </Form>
       </CardContent>
