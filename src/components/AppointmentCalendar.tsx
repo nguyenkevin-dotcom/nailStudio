@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, type CalendarProps } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -122,6 +122,19 @@ export default function AppointmentCalendar({
         : format(today, 'EEEE, MMM do, yyyy');
   };
 
+  const processedAppointments = useMemo(() => {
+    const startTimeCounts: { [key: string]: number } = {};
+    // Ensure appointments are sorted consistently for stable overlapIndex assignment
+    // The parent component already sorts them, but an additional sort here can be a safeguard if needed.
+    // For now, we assume the prop `appointments` is already sorted as desired.
+    return appointments.map(app => {
+      const appDate = new Date(app.date);
+      const key = `${format(appDate, 'yyyy-MM-dd')}-${app.time}`;
+      startTimeCounts[key] = (startTimeCounts[key] || 0) + 1;
+      return { ...app, overlapIndex: startTimeCounts[key] - 1 };
+    });
+  }, [appointments]);
+
 
   return (
     <div className="space-y-6">
@@ -151,19 +164,18 @@ export default function AppointmentCalendar({
           />
         </CardContent>
       </Card>
+      
+      <div className="mb-4">
+          <Tabs value={calendarView} onValueChange={(value) => onCalendarViewChange(value as 'week' | 'day')} className="w-full md:w-auto">
+            <TabsList className="grid w-full grid-cols-2 md:inline-flex">
+              <TabsTrigger value="week">Week View</TabsTrigger>
+              <TabsTrigger value="day">Day View</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-      {/* Render tabs and grid view only if there's a selected date or currentViewDays are set */}
       {(selectedDate || currentViewDays.length > 0) && (
         <>
-          <div className="mb-4">
-              <Tabs value={calendarView} onValueChange={(value) => onCalendarViewChange(value as 'week' | 'day')} className="w-full md:w-auto">
-                <TabsList className="grid w-full grid-cols-2 md:inline-flex">
-                  <TabsTrigger value="week">Week View</TabsTrigger>
-                  <TabsTrigger value="day">Day View</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
           <Card className="shadow-xl">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -180,13 +192,13 @@ export default function AppointmentCalendar({
             </CardHeader>
             <CardContent>
               <ScrollArea className="w-full">
-                <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full"> {/* Adjusted min-width for better responsiveness */}
+                <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full">
                   <div className="grid" style={{
                     gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`,
                     gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))`
                   }}>
 
-                    <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div> {/* Empty top-left cell */}
+                    <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div>
 
 
                     {currentViewDays.map((day, dayIndex) => (
@@ -223,8 +235,9 @@ export default function AppointmentCalendar({
                     ))}
 
 
-                    {appointments.map(app => {
-                        const dayIndex = currentViewDays.findIndex(d => isSameDay(new Date(app.date), d));
+                    {processedAppointments.map(app => {
+                        const appDate = new Date(app.date);
+                        const dayIndex = currentViewDays.findIndex(d => isSameDay(appDate, d));
                         if (dayIndex === -1) return null;
 
                         const startTimeIndex = timeSlots.indexOf(app.time);
@@ -238,6 +251,9 @@ export default function AppointmentCalendar({
                         });
 
                         const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
+                        const overlapOffsetAmount = 4; // pixels
+                        const offset = app.overlapIndex * overlapOffsetAmount;
+                        const dynamicZIndex = 5 + app.overlapIndex;
 
                         return (
                             <div
@@ -247,9 +263,10 @@ export default function AppointmentCalendar({
                                     gridColumnStart: dayIndex + 2,
                                     gridRowStart: startTimeIndex + 2,
                                     gridRowEnd: `span ${duration}`,
-                                    zIndex: 5,
+                                    zIndex: dynamicZIndex,
                                     overflow: 'hidden',
-                                    position: 'relative',
+                                    position: 'relative', // Keeps it in the grid flow for placement, transform moves it from there
+                                    transform: `translate(${offset}px, ${offset}px)`,
                                 }}
                             >
                                 <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -290,3 +307,4 @@ export default function AppointmentCalendar({
     </div>
   );
 }
+
