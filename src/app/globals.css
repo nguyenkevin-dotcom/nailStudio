@@ -53,6 +53,8 @@ body {
     --sidebar-accent-foreground: 10 15% 30%;
     --sidebar-border: 10 20% 80%;
     --sidebar-ring: 10 26% 74%;
+
+    --slot-full-foreground: 356 23% 55%; /* #ad6a6c */
   }
 
   .dark {
@@ -99,6 +101,8 @@ body {
     --sidebar-accent-foreground: 23 30% 80%;
     --sidebar-border: 20 10% 25%;
     --sidebar-ring: 10 26% 74%;
+
+    --slot-full-foreground: 356 23% 55%; /* #ad6a6c */
   }
 }
 
@@ -129,3 +133,4 @@ body {
   background-color: hsl(var(--primary));
   border-radius: 50%;
 }
+

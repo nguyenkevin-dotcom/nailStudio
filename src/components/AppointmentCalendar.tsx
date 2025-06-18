@@ -107,17 +107,17 @@ export default function AppointmentCalendar({
   const getTitle = () => {
     if (currentViewDays.length === 0 && selectedDate) {
         return calendarView === 'week'
-            ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
+            ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), "MMM do, yyyy")}`
             : format(selectedDate, 'EEEE, MMM do, yyyy');
     }
     if (currentViewDays.length > 0) {
         return calendarView === 'week'
-            ? `${format(currentViewDays[0], 'MMM do')} - ${format(currentViewDays[currentViewDays.length - 1], 'MMM do, yyyy')}`
+            ? `${format(currentViewDays[0], 'MMM do')} - ${format(currentViewDays[currentViewDays.length - 1], "MMM do, yyyy")}`
             : format(currentViewDays[0], 'EEEE, MMM do, yyyy');
     }
     const today = new Date();
     return calendarView === 'week'
-        ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(today, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
+        ? `${format(startOfWeek(today, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(today, { weekStartsOn: 1 }), "MMM do, yyyy")}`
         : format(today, 'EEEE, MMM do, yyyy');
   };
 
@@ -216,12 +216,18 @@ export default function AppointmentCalendar({
                             {currentViewDays.map((day, dayIndex) => (
                                 <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
                                     style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
-                                    className={`border-b border-r border-border min-h-[6rem] relative group ${calendarView === 'week' ? 'flex items-center justify-center' : 'p-1' }`}>
+                                    className={`border-b border-r border-border min-h-[6rem] relative group flex items-center justify-center`}>
                                     {calendarView === 'week' ? (
                                         (() => {
                                             const customers = getCustomersInSlot(day, timeSlot);
+                                            let textColorClass = 'text-base text-muted-foreground/70';
+                                            if (customers === 6) {
+                                                textColorClass = 'text-lg font-semibold text-[hsl(var(--slot-full-foreground))]';
+                                            } else if (customers > 0) {
+                                                textColorClass = 'text-lg font-semibold text-primary';
+                                            }
                                             return (
-                                                <div className={`text-center font-body ${customers > 0 ? 'text-lg text-primary font-semibold' : 'text-base text-muted-foreground/70'}`}>
+                                                <div className={`text-center font-body ${textColorClass}`}>
                                                     {customers}/6
                                                 </div>
                                             );
