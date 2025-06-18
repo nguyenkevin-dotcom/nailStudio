@@ -23,7 +23,7 @@ interface AppointmentCalendarProps {
 
 const getIcon = (iconName: keyof typeof LucideIcons | 'Default'): React.ElementType => {
   if (iconName === 'Default' || !LucideIcons[iconName]) {
-    return LucideIcons.Sparkles; 
+    return LucideIcons.Sparkles;
   }
   return LucideIcons[iconName] as React.ElementType;
 };
@@ -36,7 +36,7 @@ const appointmentCoversSlot = (appointment: Appointment, day: Date, slot: string
   const slotIndex = allTimeSlots.indexOf(slot);
   if (appointmentStartIndex === -1 || slotIndex === -1) return false;
 
-  const duration = appointment.services.length || 1; 
+  const duration = appointment.services.length || 1;
   return slotIndex >= appointmentStartIndex && slotIndex < (appointmentStartIndex + duration);
 };
 
@@ -53,7 +53,7 @@ export default function AppointmentCalendar({
   const [currentViewDays, setCurrentViewDays] = useState<Date[]>([]);
 
   useEffect(() => {
-    const baseDate = selectedDate || new Date(); 
+    const baseDate = selectedDate || new Date();
 
     if (calendarView === 'week') {
       const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
@@ -75,7 +75,7 @@ export default function AppointmentCalendar({
       </div>
     );
   };
-  
+
   const getCustomersInSlot = (day: Date, timeSlot: string): number => {
     return appointments
       .filter(app => appointmentCoversSlot(app, day, timeSlot, timeSlots))
@@ -102,7 +102,7 @@ export default function AppointmentCalendar({
 
   const getTitle = () => {
     if (currentViewDays.length === 0 && selectedDate) {
-        return calendarView === 'week' 
+        return calendarView === 'week'
             ? `${format(startOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do')} - ${format(endOfWeek(selectedDate, { weekStartsOn: 1 }), 'MMM do, yyyy')}`
             : format(selectedDate, 'EEEE, MMM do, yyyy');
     }
@@ -168,29 +168,29 @@ export default function AppointmentCalendar({
             <ScrollArea className="w-full">
               <div className="min-w-[400px] md:min-w-[700px] lg:min-w-full"> {/* Adjusted min-width for better responsiveness */}
                 <div className="grid" style={{
-                  gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`, 
-                  gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))` 
+                  gridTemplateColumns: `auto repeat(${currentViewDays.length}, minmax(100px, 1fr))`,
+                  gridTemplateRows: `auto repeat(${timeSlots.length}, minmax(6rem, auto))`
                 }}>
-                  
+
                   <div className="p-2 border-b border-r border-border sticky top-0 left-0 bg-card z-30"></div> {/* Empty top-left cell */}
 
-                  
+
                   {currentViewDays.map((day, dayIndex) => (
-                      <div key={format(day, 'yyyy-MM-dd-header')} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
+                      <div key={format(day, "yyyy-MM-dd'-header'")} style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
                            className={`p-2 border-b border-r border-border font-semibold text-sm text-center sticky top-0 bg-card z-20 font-body ${isSameDay(day, new Date()) ? 'text-primary' : ''}`}>
                           {format(day, 'EEE')} <br /> {format(day, 'd')}
                       </div>
                   ))}
 
-                  
+
                   {timeSlots.map((timeSlot, timeIndex) => (
                       <React.Fragment key={`timeslot-row-${timeSlot}`}>
-                          
+
                           <div style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
                                className="p-2 border-b border-r border-border font-semibold text-xs h-full flex items-center justify-center bg-card sticky left-0 z-20 font-body">
                               {timeSlot}
                           </div>
-                          
+
                           {currentViewDays.map((day, dayIndex) => (
                               <div key={`cell-${format(day, 'yyyy-MM-dd')}-${timeSlot}`}
                                    style={{ gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }}
@@ -208,21 +208,21 @@ export default function AppointmentCalendar({
                       </React.Fragment>
                   ))}
 
-                  
+
                   {appointments.map(app => {
                       const dayIndex = currentViewDays.findIndex(d => isSameDay(new Date(app.date), d));
-                      if (dayIndex === -1) return null; 
+                      if (dayIndex === -1) return null;
 
                       const startTimeIndex = timeSlots.indexOf(app.time);
-                      if (startTimeIndex === -1) return null; 
+                      if (startTimeIndex === -1) return null;
 
                       const duration = app.services.length || 1;
-                      
+
                       const serviceObjects = app.services.map(serviceId => {
                         const serviceInfo = availableServices.find(s => s.id === serviceId);
                         return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                       });
-                      
+
                       const cardMaxHeight = `${Math.max(1, duration) * 6 - 0.5}rem`;
 
                       return (
@@ -233,9 +233,9 @@ export default function AppointmentCalendar({
                                   gridColumnStart: dayIndex + 2,
                                   gridRowStart: startTimeIndex + 2,
                                   gridRowEnd: `span ${duration}`,
-                                  zIndex: 5, 
-                                  overflow: 'hidden', 
-                                  position: 'relative', 
+                                  zIndex: 5,
+                                  overflow: 'hidden',
+                                  position: 'relative',
                               }}
                           >
                               <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -251,7 +251,7 @@ export default function AppointmentCalendar({
                                   </Button>
                               </div>
                               <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                              <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}> 
+                              <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardMaxHeight} - 3rem)` }}>
                                   <ul className="mt-0.5 space-y-0.5">
                                       {serviceObjects.map(service => {
                                           const SvcIcon = getIcon(service.iconName);
@@ -275,3 +275,4 @@ export default function AppointmentCalendar({
     </div>
   );
 }
+
