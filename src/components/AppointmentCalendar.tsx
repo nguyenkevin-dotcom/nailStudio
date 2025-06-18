@@ -19,7 +19,7 @@ interface AppointmentCalendarProps {
   availableServices: Service[];
   onCalendarDayClick: (date: Date) => void;
   selectedDate: Date | undefined;
-  onDeleteAppointment: (appointmentId: string) => void;
+  onDeleteAppointment: (appointmentId: number) => void; // Changed to number
   timeSlots: string[];
   calendarView: 'week' | 'day';
   onCalendarViewChange: (view: 'week' | 'day') => void;
@@ -134,7 +134,7 @@ export default function AppointmentCalendar({
         const timeAIndex = timeSlots.indexOf(a.time);
         const timeBIndex = timeSlots.indexOf(b.time);
         if (timeAIndex !== timeBIndex) return timeAIndex - timeBIndex;
-        return a.id.localeCompare(b.id); 
+        return a.id - b.id; 
       });
 
     const appointmentsByStartTime: { [time: string]: Appointment[] } = {};

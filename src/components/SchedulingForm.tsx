@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle, Phone } from 'lucide-react';
-import type { Service, Appointment } from '@/types';
+import type { Service, Appointment, NewAppointment } from '@/types';
 import { format, isSameDay, getHours } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import * as LucideIcons from 'lucide-react';
@@ -23,7 +23,7 @@ import { useEffect, useState } from 'react';
 interface SchedulingFormProps {
   availableServices: Service[];
   timeSlots: string[];
-  onAddAppointment: (data: Omit<Appointment, 'id'>) => boolean;
+  onAddAppointment: (data: NewAppointment) => Promise<boolean>;
   appointments: Appointment[];
 }
 
@@ -38,12 +38,12 @@ const formSchema = z.object({
   phoneNumber: z.string()
     .optional()
     .refine(val => {
-      if (!val || val === '' || val === '+420') return true; // Optional, so empty or just prefix is okay (will be normalized by transform)
+      if (!val || val === '' || val === '+420') return true; 
       return phoneRegex.test(val);
     }, {
       message: "Phone number must be in the format +420 followed by 9 digits, or left blank.",
     })
-    .transform(val => (val === '+420' ? '' : val)), // Normalize '+420' to empty string if it's the only content
+    .transform(val => (val === '+420' ? '' : val)),
 });
 
 export default function SchedulingForm({ availableServices, timeSlots: allTimeSlots, onAddAppointment, appointments }: SchedulingFormProps) {
@@ -114,12 +114,16 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
   }, [watchedDate, appointments, allTimeSlots, form]);
 
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const submissionValues = {
-      ...values,
-      phoneNumber: values.phoneNumber || undefined, // If phoneNumber is empty string after transform, it becomes undefined
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const submissionValues: NewAppointment = {
+      name: values.name,
+      date: values.date, // Date object
+      time: values.time,
+      services: values.services,
+      groupSize: values.groupSize,
+      phoneNumber: values.phoneNumber || undefined,
     };
-    const success = onAddAppointment(submissionValues);
+    const success = await onAddAppointment(submissionValues);
     if (success) {
       toast({
         title: "Appointment Scheduled!",
@@ -148,12 +152,12 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
     if (inputValue.startsWith('+420')) {
       const digits = inputValue.substring(4).replace(/[^0-9]/g, '');
-      formattedValue += digits.substring(0, 9); // Max 9 digits
-    } else if (inputValue.startsWith('+')) { // User might be trying to type a different prefix
+      formattedValue += digits.substring(0, 9); 
+    } else if (inputValue.startsWith('+')) { 
       const digits = inputValue.substring(1).replace(/[^0-9]/g, '');
       formattedValue += digits.substring(0, 9);
     }
-    else { // No prefix, or something else, assume they are typing digits for the national part
+    else { 
       const digits = inputValue.replace(/[^0-9]/g, '');
       formattedValue += digits.substring(0, 9);
     }
@@ -196,9 +200,9 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                   <FormControl>
                     <Input
                       type="tel"
-                      {...field} // Pass all field props
-                      onChange={handlePhoneNumberChange} // Override onChange
-                      // value is managed by react-hook-form via field.value
+                      {...field} 
+                      onChange={handlePhoneNumberChange} 
+                      value={field.value || '+420'} // Ensure value is controlled and starts with +420
                     />
                   </FormControl>
                   <FormMessage />
@@ -237,7 +241,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                         selected={field.value}
                         onSelect={(date) => {
                            if (date) field.onChange(date);
-                           setIsDatePopoverOpen(false);
+                           setIsDatePopoverOpen(false); // Close popover on select
                         }}
                         disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date > new Date(new Date().setDate(new Date().getDate() + 90)) }
                         initialFocus
@@ -332,7 +336,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
               name="groupSize"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-semibold font-body flex items-center text-sm"><Users className="mr-2 h-4 w-4" />Group Size (max 3 per booking)</FormLabel>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><Users className="mr-2 h-4 w-4" />Group Size</FormLabel>
                   <Select onValueChange={(value) => field.onChange(parseInt(value))} value={String(field.value)}>
                     <FormControl>
                       <SelectTrigger className="font-body">
@@ -356,4 +360,3 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
     </Card>
   );
 }
-

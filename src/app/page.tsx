@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Appointment, Service } from '@/types';
+import { useState, useEffect, useCallback } from 'react';
+import type { Appointment, Service, NewAppointment } from '@/types';
 import Header from '@/components/Header';
 import SchedulingForm from '@/components/SchedulingForm';
 import AppointmentCalendar from '@/components/AppointmentCalendar';
@@ -28,30 +28,48 @@ export default function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [calendarView, setCalendarView] = useState<'week' | 'day'>('week');
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchAppointments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/appointments');
+      if (!response.ok) {
+        throw new Error('Failed to fetch appointments');
+      }
+      const data: Appointment[] = await response.json();
+      // Ensure dates are Date objects
+      const parsedAppointments = data.map(app => ({
+        ...app,
+        date: new Date(app.date),
+      }));
+      // Sort appointments after fetching
+      parsedAppointments.sort((a, b) => {
+          const dateComparison = a.date.getTime() - b.date.getTime();
+          if (dateComparison !== 0) return dateComparison;
+          return timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time);
+        });
+      setAppointments(parsedAppointments);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      toast({
+        title: "Error",
+        description: "Could not load appointments from the server.",
+        variant: "destructive",
+      });
+      setAppointments([]); // Clear appointments on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const storedAppointments = localStorage.getItem('glamBookAppointments');
-    if (storedAppointments) {
-      try {
-        const parsedAppointments = JSON.parse(storedAppointments).map((app: any) => ({
-          ...app,
-          date: new Date(app.date),
-          phoneNumber: app.phoneNumber || undefined, // Handle potentially missing phoneNumber
-        }));
-        setAppointments(parsedAppointments);
-      } catch (error) {
-        console.error("Error parsing appointments from local storage:", error);
-        localStorage.removeItem('glamBookAppointments');
-      }
-    }
+    fetchAppointments();
     if (!selectedDate) {
         setSelectedDate(new Date()); 
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('glamBookAppointments', JSON.stringify(appointments));
-  }, [appointments]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchAppointments]); // fetchAppointments is memoized with useCallback
 
 
   useEffect(() => {
@@ -78,7 +96,7 @@ export default function HomePage() {
     return slotToCheckIndex >= appointmentStartTimeIndex && slotToCheckIndex < (appointmentStartTimeIndex + appointmentDuration);
   };
 
-  const addAppointment = (newAppointmentData: Omit<Appointment, 'id'>) => {
+  const addAppointment = async (newAppointmentData: NewAppointment) => {
     const appointmentDuration = newAppointmentData.services.length || 1;
     if (appointmentDuration === 0) {
       toast({
@@ -140,34 +158,69 @@ export default function HomePage() {
             return false;
         }
     }
-
-    const newId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
-    const appointmentWithId: Appointment = { ...newAppointmentData, id: newId };
     
-    setAppointments(prev => {
-        const updatedAppointments = [...prev, appointmentWithId];
-        updatedAppointments.sort((a, b) => {
-          const dateComparison = a.date.getTime() - b.date.getTime();
-          if (dateComparison !== 0) return dateComparison;
-          return timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time);
-        });
-        return updatedAppointments;
-    });
-    return true;
+    try {
+      const response = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Send date as ISO string for backend processing
+        body: JSON.stringify({...newAppointmentData, date: newAppointmentData.date.toISOString()}),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create appointment');
+      }
+      
+      // const createdAppointment: Appointment = await response.json();
+      await fetchAppointments(); // Re-fetch all appointments to update the list
+      return true;
+
+    } catch (error) {
+      console.error("Error adding appointment:", error);
+      toast({
+        title: "Error Creating Appointment",
+        description: (error as Error).message || "Could not save the appointment.",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
 
-  const deleteAppointment = (appointmentId: string) => {
+  const deleteAppointment = async (appointmentId: number) => {
     const appointmentToDelete = appointments.find(app => app.id === appointmentId);
-    setAppointments(prev => prev.filter(app => app.id !== appointmentId));
-    if (appointmentToDelete) {
-       toast({
-        title: "Appointment Canceled",
-        description: (
-          <div className="font-body">
-            Appointment for <span className="font-semibold">{appointmentToDelete.name}</span> on <span className="font-semibold">{format(appointmentToDelete.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{appointmentToDelete.time}</span> has been canceled.
-          </div>
-        ),
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete appointment');
+      }
+      
+      await fetchAppointments(); // Re-fetch all appointments to update the list
+
+      if (appointmentToDelete) {
+        toast({
+          title: "Appointment Canceled",
+          description: (
+            <div className="font-body">
+              Appointment for <span className="font-semibold">{appointmentToDelete.name}</span> on <span className="font-semibold">{format(appointmentToDelete.date, "EEEE, MMMM do")}</span> at <span className="font-semibold">{appointmentToDelete.time}</span> has been canceled.
+            </div>
+          ),
+          variant: "destructive", // Keep destructive for cancellation feedback
+        });
+      }
+
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      toast({
+        title: "Error Deleting Appointment",
+        description: (error as Error).message || "Could not delete the appointment.",
         variant: "destructive",
       });
     }
@@ -180,6 +233,21 @@ export default function HomePage() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (isLoading && appointments.length === 0) {
+    return (
+        <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+            <Header />
+            <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8 flex justify-center items-center">
+                <p className="text-xl font-semibold">Loading appointments...</p>
+            </main>
+            <footer className="text-center p-6 text-sm text-muted-foreground border-t border-border font-body">
+                Nehtové studio Lenka Šumperk &copy; {new Date().getFullYear()} - Your Beauty, Scheduled.
+            </footer>
+        </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
