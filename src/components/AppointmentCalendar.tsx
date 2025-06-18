@@ -11,6 +11,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, 
 import { CalendarDays, Users, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 
 interface AppointmentCalendarProps {
@@ -180,7 +181,10 @@ export default function AppointmentCalendar({
             components={{ DayContent: DayContentWithDot }}
             className="rounded-md border p-4"
             modifiersClassNames={{
-              selected: 'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90',
+              selected: cn(
+                'bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90',
+                'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none'
+              ),
               today: 'bg-accent text-accent-foreground',
             }}
             initialFocus={!!selectedDate}
@@ -301,8 +305,9 @@ export default function AppointmentCalendar({
                                 gridRowEnd: `span ${duration}`,
                                 zIndex: 5 + (horizontalOverlapIndex || 0),
                                 overflow: 'hidden',
-                                position: 'relative', // Crucial for `left` to work
-                                width: `${cardFixedWidthRem}rem`, 
+                                position: 'relative', 
+                                width: `${cardFixedWidthRem}rem`,
+                                maxWidth: `${cardFixedWidthRem}rem`, 
                             };
 
                             if (horizontalOverlapCount > 1) {
@@ -330,7 +335,7 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3rem)` }}>
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.2rem)` }}> {/* Adjusted maxHeight slightly */}
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
