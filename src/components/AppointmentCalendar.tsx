@@ -129,11 +129,11 @@ export default function AppointmentCalendar({
     const selectedDayToRender = currentViewDays[0];
     const appointmentsOnSelectedDay = appointments
       .filter(app => isSameDay(new Date(app.date), selectedDayToRender))
-      .sort((a, b) => { // Consistent sort order for stable horizontal indexing
+      .sort((a, b) => {
         const timeAIndex = timeSlots.indexOf(a.time);
         const timeBIndex = timeSlots.indexOf(b.time);
         if (timeAIndex !== timeBIndex) return timeAIndex - timeBIndex;
-        return a.id.localeCompare(b.id); // Fallback to ID for stable ordering
+        return a.id.localeCompare(b.id); 
       });
 
     const appointmentsByStartTime: { [time: string]: Appointment[] } = {};
@@ -147,7 +147,6 @@ export default function AppointmentCalendar({
     const processed: (Appointment & { horizontalOverlapCount: number; horizontalOverlapIndex: number })[] = [];
     for (const time in appointmentsByStartTime) {
       const group = appointmentsByStartTime[time];
-      // The group is already sorted by ID if times are the same due to the initial sort.
       group.forEach((app, index) => {
         processed.push({
           ...app,
@@ -159,6 +158,7 @@ export default function AppointmentCalendar({
     return processed;
   }, [appointments, timeSlots, calendarView, currentViewDays]);
 
+  const cardFixedWidthRem = 8; // Fixed width for appointment cards, e.g., 8rem = 128px
 
   return (
     <div className="space-y-6">
@@ -275,29 +275,24 @@ export default function AppointmentCalendar({
                         </React.Fragment>
                     ))}
 
-
                     {calendarView === 'day' &&
                         dayViewAppointmentsData.map(app => {
                             const appDate = new Date(app.date);
-                            // This check is technically redundant if dayViewAppointmentsData is correctly filtered, but safe
                             if (currentViewDays.length === 0 || !isSameDay(appDate, currentViewDays[0])) {
                               return null;
                             }
                             
-                            const dayGridColumnIndex = 0; // In day view, appointments are in the first (and only) data column
-
+                            const dayGridColumnIndex = 0; 
                             const startTimeIndex = timeSlots.indexOf(app.time);
                             if (startTimeIndex === -1) return null;
 
                             const duration = app.services.length || 1;
-
                             const serviceObjects = app.services.map(serviceId => {
                               const serviceInfo = availableServices.find(s => s.id === serviceId);
                               return serviceInfo || { id: serviceId, name: `Unknown (${serviceId})`, iconName: 'Default' as const };
                             });
                             
                             const cardVisualHeightInRem = Math.max(1, duration) * 6 - 0.5;
-                            
                             const { horizontalOverlapCount, horizontalOverlapIndex } = app;
 
                             const dynamicStyles: React.CSSProperties = {
@@ -307,13 +302,15 @@ export default function AppointmentCalendar({
                                 zIndex: 5 + (horizontalOverlapIndex || 0),
                                 overflow: 'hidden',
                                 position: 'relative',
+                                width: `${cardFixedWidthRem}rem`,
                             };
 
-                            if (horizontalOverlapCount && horizontalOverlapCount > 1) {
-                                dynamicStyles.width = `calc(100% / ${horizontalOverlapCount})`;
-                                dynamicStyles.left = `calc(${(horizontalOverlapIndex || 0)} * (100% / ${horizontalOverlapCount}))`;
+                            if (horizontalOverlapCount > 1) {
+                                dynamicStyles.left = `${horizontalOverlapIndex * cardFixedWidthRem}rem`;
+                            } else {
+                                dynamicStyles.left = '0rem';
                             }
-
+                            
                             return (
                                 <div
                                     key={app.id}
@@ -358,4 +355,3 @@ export default function AppointmentCalendar({
     </div>
   );
 }
-
