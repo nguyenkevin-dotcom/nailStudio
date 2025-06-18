@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle } from 'lucide-react';
+import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle, Phone } from 'lucide-react';
 import type { Service, Appointment } from '@/types';
 import { format, isSameDay, getHours } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -33,11 +33,15 @@ const formSchema = z.object({
   time: z.string({ required_error: 'Please select a time.' }).min(1, 'Please select a time.'),
   services: z.array(z.string()).min(1, { message: 'Please select at least one service.' }),
   groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3. Combined group size for a time slot cannot exceed 6."),
+  phoneNumber: z.string().optional().refine(val => !val || /^\+?[0-9\s\-()]{7,15}$/.test(val), { // Basic validation, allows digits, spaces, hyphens, parens, optional +
+    message: "Please enter a valid phone number (7-15 digits, optional +).",
+  }),
 });
 
 export default function SchedulingForm({ availableServices, timeSlots: allTimeSlots, onAddAppointment, appointments }: SchedulingFormProps) {
   const { toast } = useToast();
   const [filteredTimeSlots, setFilteredTimeSlots] = useState<string[]>(allTimeSlots);
+  const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,6 +51,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
       time: '',
       services: [],
       groupSize: 1,
+      phoneNumber: '',
     },
   });
 
@@ -54,7 +59,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
   useEffect(() => {
     if (!watchedDate) {
-      setFilteredTimeSlots([]); // Or allTimeSlots if you want to show them before date selection
+      setFilteredTimeSlots([]); 
       if (form.getValues('time')) {
         form.setValue('time', '', { shouldValidate: true });
       }
@@ -63,17 +68,15 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
     let currentAvailableSlots = [...allTimeSlots];
 
-    // 1. Filter by current time if selected date is today
     if (isSameDay(watchedDate, new Date())) {
       const now = new Date();
       const currentHour = getHours(now);
       currentAvailableSlots = currentAvailableSlots.filter(slot => {
         const slotHour = parseInt(slot.split(':')[0]);
-        return slotHour > currentHour; // Only allow slots strictly after the current hour
+        return slotHour > currentHour; 
       });
     }
 
-    // 2. Filter by slot capacity (remove slots that are completely full)
     currentAvailableSlots = currentAvailableSlots.filter(slotToCheck => {
       let customersInThisSlot = 0;
       for (const appointment of appointments) {
@@ -83,9 +86,8 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
           const appointmentDuration = appointment.services.length || 1;
           const slotToCheckIndex = allTimeSlots.indexOf(slotToCheck);
-          if (slotToCheckIndex === -1) continue; // Should not happen if slotToCheck is from allTimeSlots
+          if (slotToCheckIndex === -1) continue; 
 
-          // Check if the 'appointment' covers 'slotToCheck'
           if (slotToCheckIndex >= appointmentStartTimeIndex && slotToCheckIndex < (appointmentStartTimeIndex + appointmentDuration)) {
             customersInThisSlot += appointment.groupSize;
           }
@@ -96,7 +98,6 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
     setFilteredTimeSlots(currentAvailableSlots);
 
-    // Reset selected time if it's no longer in the filtered list
     const currentSelectedTime = form.getValues('time');
     if (currentSelectedTime && !currentAvailableSlots.includes(currentSelectedTime)) {
       form.setValue('time', '', { shouldValidate: true });
@@ -106,7 +107,11 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const success = onAddAppointment(values);
+    const submissionValues = {
+      ...values,
+      phoneNumber: values.phoneNumber || undefined, // Ensure empty string becomes undefined
+    };
+    const success = onAddAppointment(submissionValues);
     if (success) {
       toast({
         title: "Appointment Scheduled!",
@@ -117,9 +122,8 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
         ),
         variant: "default",
       });
-      form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1 });
-      // After reset, date is undefined, so useEffect will clear filteredTimeSlots
-      // and the time field.
+      form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1, phoneNumber: '' });
+      setIsDatePopoverOpen(false); 
     }
   }
 
@@ -142,7 +146,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3"> {/* Reduced space-y */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="name"
@@ -156,6 +160,20 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-semibold font-body flex items-center text-sm"><Phone className="mr-2 h-4 w-4" />Phone Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="e.g., +1 123 456 7890" {...field} value={field.value ?? ''} className="font-body" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -163,7 +181,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel className="font-semibold font-body flex items-center text-sm"><CalendarIcon className="mr-2 h-4 w-4" />Date</FormLabel>
-                  <Popover>
+                  <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -186,7 +204,10 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                           if (date) field.onChange(date);
+                           setIsDatePopoverOpen(false);
+                        }}
                         disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date > new Date(new Date().setDate(new Date().getDate() + 90)) }
                         initialFocus
                       />
@@ -229,7 +250,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
               name="services"
               render={() => (
                 <FormItem>
-                  <div className="mb-1"> {/* Reduced mb */}
+                  <div className="mb-1"> 
                     <FormLabel className="text-base font-semibold font-body flex items-center text-sm">
                       <Sparkles className="mr-2 h-4 w-4" />Services
                     </FormLabel>
@@ -248,7 +269,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                         return (
                           <FormItem
                             key={service.id}
-                            className="flex flex-row items-center space-x-2 space-y-0 mb-0.5 p-1.5 border rounded-md hover:bg-accent/50 transition-colors" /* Reduced space, mb, p */
+                            className="flex flex-row items-center space-x-2 space-y-0 mb-0.5 p-1.5 border rounded-md hover:bg-accent/50 transition-colors" 
                           >
                             <FormControl>
                               <Checkbox
@@ -265,7 +286,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                               />
                             </FormControl>
                             <FormLabel className="font-normal font-body text-sm flex items-center cursor-pointer w-full">
-                              <IconComponent className="mr-2 h-4 w-4 text-primary" /> {/* Reduced icon size */}
+                              <IconComponent className="mr-2 h-4 w-4 text-primary" />
                               {service.name}
                             </FormLabel>
                           </FormItem>
@@ -301,7 +322,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full font-body text-sm py-2.5">Book Appointment</Button> {/* Reduced text size and padding */}
+            <Button type="submit" className="w-full font-body text-sm py-2.5">Book Appointment</Button>
           </form>
         </Form>
       </CardContent>

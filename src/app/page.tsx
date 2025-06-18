@@ -36,6 +36,7 @@ export default function HomePage() {
         const parsedAppointments = JSON.parse(storedAppointments).map((app: any) => ({
           ...app,
           date: new Date(app.date),
+          phoneNumber: app.phoneNumber || undefined, // Handle potentially missing phoneNumber
         }));
         setAppointments(parsedAppointments);
       } catch (error) {
@@ -141,7 +142,8 @@ export default function HomePage() {
     }
 
     const newId = Date.now().toString() + Math.random().toString(36).substring(2, 7);
-    const appointmentWithId = { ...newAppointmentData, id: newId };
+    const appointmentWithId: Appointment = { ...newAppointmentData, id: newId };
+    
     setAppointments(prev => {
         const updatedAppointments = [...prev, appointmentWithId];
         updatedAppointments.sort((a, b) => {

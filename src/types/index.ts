@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface Service {
@@ -13,4 +14,5 @@ export interface Appointment {
   time: string;
   services: string[]; // Array of service IDs
   groupSize: number;
+  phoneNumber?: string; // Optional phone number
 }

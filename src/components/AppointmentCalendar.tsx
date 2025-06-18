@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import type { Appointment, Service } from '@/types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addDays, subDays } from 'date-fns';
-import { CalendarDays, Users, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, Users, Trash2, ChevronLeft, ChevronRight, Phone } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
@@ -65,7 +65,7 @@ export default function AppointmentCalendar({
       const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 });
       const daysInView = eachDayOfInterval({ start: weekStart, end: weekEnd });
       setCurrentViewDays(daysInView);
-    } else { // calendarView === 'day'
+    } else { 
       setCurrentViewDays([baseDate]);
     }
   }, [selectedDate, calendarView]);
@@ -183,7 +183,7 @@ export default function AppointmentCalendar({
             modifiersClassNames={{
               selected: cn(
                 'bg-primary text-primary-foreground hover:bg-primary/90',
-                'focus:bg-primary focus:text-primary-foreground', // Ensure focus state matches selected state
+                'focus:bg-primary focus:text-primary-foreground', 
                 'focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none'
               ),
               today: 'bg-accent text-accent-foreground',
@@ -265,7 +265,7 @@ export default function AppointmentCalendar({
                                                 </div>
                                             );
                                         })()
-                                    ) : ( // Day View
+                                    ) : ( 
                                         (() => {
                                             const customers = getCustomersInSlot(day, timeSlot);
                                             return customers > 0 ? (
@@ -336,7 +336,13 @@ export default function AppointmentCalendar({
                                         </Button>
                                     </div>
                                     <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0"><Users className="inline h-3 w-3 mr-1" />{app.groupSize}</p>
-                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - 3.0rem)` }}> {/* Adjusted maxHeight */}
+                                    {app.phoneNumber && (
+                                      <p className="text-muted-foreground font-body mb-0.5 flex-shrink-0 truncate">
+                                        <Phone className="inline h-3 w-3 mr-1" />
+                                        {app.phoneNumber}
+                                      </p>
+                                    )}
+                                    <ScrollArea className="flex-grow" style={{ maxHeight: `calc(${cardVisualHeightInRem}rem - ${app.phoneNumber ? '4.5rem' : '3.0rem'})` }}> 
                                         <ul className="mt-0.5 space-y-0.5">
                                             {serviceObjects.map(service => {
                                                 const SvcIcon = getIcon(service.iconName);
@@ -361,4 +367,3 @@ export default function AppointmentCalendar({
     </div>
   );
 }
-
