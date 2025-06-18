@@ -70,7 +70,7 @@ export default function AppointmentCalendar({
     }
   }, [selectedDate, calendarView]);
 
-  const DayContentWithDot: CalendarProps['components']['DayContent'] = ({ date }) => {
+  const DayContentWithDot = ({ date }: { date: Date }) => {
     const isBooked = appointments.some(app => isSameDay(new Date(app.date), date));
     const dateNumber = <>{date.getDate()}</>;
     return (

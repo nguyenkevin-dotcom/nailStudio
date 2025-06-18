@@ -345,7 +345,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                     </FormControl>
                     <SelectContent>
                       {[1, 2, 3].map(num => (
-                        <SelectItem key={num} value={String(num)} className="font-body">{num} person{num > 1 ? 's' : ''}</SelectItem>
+                        <SelectItem key={num} value={String(num)} className="font-body">{num} {num > 1 ? 'people' : 'person'}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
