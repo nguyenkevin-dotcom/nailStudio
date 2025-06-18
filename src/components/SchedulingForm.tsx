@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Clock, Users, Sparkles, CalendarPlus, UserCircle, Phone } from 'lucide-react';
 import type { Service, Appointment } from '@/types';
@@ -27,15 +27,23 @@ interface SchedulingFormProps {
   appointments: Appointment[];
 }
 
+const phoneRegex = /^\+420[0-9]{9}$/;
+
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.').max(50, 'Name cannot exceed 50 characters.'),
   date: z.date({ required_error: 'Please select a date.' }),
   time: z.string({ required_error: 'Please select a time.' }).min(1, 'Please select a time.'),
   services: z.array(z.string()).min(1, { message: 'Please select at least one service.' }),
   groupSize: z.coerce.number().min(1, "Group size must be at least 1.").max(3, "Group size cannot exceed 3. Combined group size for a time slot cannot exceed 6."),
-  phoneNumber: z.string().optional().refine(val => !val || /^\+?[0-9\s\-()]{7,15}$/.test(val), {
-    message: "Please enter a valid phone number (7-15 digits, optional +).",
-  }),
+  phoneNumber: z.string()
+    .optional()
+    .refine(val => {
+      if (!val || val === '' || val === '+420') return true; // Optional, so empty or just prefix is okay (will be normalized by transform)
+      return phoneRegex.test(val);
+    }, {
+      message: "Phone number must be in the format +420 followed by 9 digits, or left blank.",
+    })
+    .transform(val => (val === '+420' ? '' : val)), // Normalize '+420' to empty string if it's the only content
 });
 
 export default function SchedulingForm({ availableServices, timeSlots: allTimeSlots, onAddAppointment, appointments }: SchedulingFormProps) {
@@ -51,7 +59,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
       time: '',
       services: [],
       groupSize: 1,
-      phoneNumber: '',
+      phoneNumber: '+420',
     },
   });
 
@@ -109,7 +117,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
   function onSubmit(values: z.infer<typeof formSchema>) {
     const submissionValues = {
       ...values,
-      phoneNumber: values.phoneNumber || undefined,
+      phoneNumber: values.phoneNumber || undefined, // If phoneNumber is empty string after transform, it becomes undefined
     };
     const success = onAddAppointment(submissionValues);
     if (success) {
@@ -122,7 +130,7 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
         ),
         variant: "default",
       });
-      form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1, phoneNumber: '' });
+      form.reset({ name: '', date: undefined, time: '', services: [], groupSize: 1, phoneNumber: '+420' });
       setIsDatePopoverOpen(false);
     }
   }
@@ -134,6 +142,25 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
     return LucideIcons[iconName] as React.ElementType;
   };
 
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputValue = e.target.value;
+    let formattedValue = '+420';
+
+    if (inputValue.startsWith('+420')) {
+      const digits = inputValue.substring(4).replace(/[^0-9]/g, '');
+      formattedValue += digits.substring(0, 9); // Max 9 digits
+    } else if (inputValue.startsWith('+')) { // User might be trying to type a different prefix
+      const digits = inputValue.substring(1).replace(/[^0-9]/g, '');
+      formattedValue += digits.substring(0, 9);
+    }
+    else { // No prefix, or something else, assume they are typing digits for the national part
+      const digits = inputValue.replace(/[^0-9]/g, '');
+      formattedValue += digits.substring(0, 9);
+    }
+    
+    form.setValue('phoneNumber', formattedValue, { shouldValidate: true });
+  };
+
 
   return (
     <Card className="shadow-xl w-full">
@@ -142,7 +169,6 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
           <CalendarPlus className="mr-2 h-5 w-5 text-primary" />
           Book Your Appointment
         </CardTitle>
-        <CardDescription className="font-body text-sm">Fill in the details below to schedule your glam session.</CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <Form {...form}>
@@ -168,7 +194,12 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
                 <FormItem>
                   <FormLabel className="font-semibold font-body flex items-center text-sm"><Phone className="mr-2 h-4 w-4" />Phone Number (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="+420" {...field} value={field.value ?? ''} className="font-body" />
+                    <Input
+                      type="tel"
+                      {...field} // Pass all field props
+                      onChange={handlePhoneNumberChange} // Override onChange
+                      // value is managed by react-hook-form via field.value
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -325,3 +356,4 @@ export default function SchedulingForm({ availableServices, timeSlots: allTimeSl
     </Card>
   );
 }
+
